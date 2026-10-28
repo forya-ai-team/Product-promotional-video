@@ -2,19 +2,19 @@ import type { FC, ReactNode } from 'react';
 import { AbsoluteFill, Easing, useCurrentFrame } from 'remotion';
 import { BigCursor } from '../ui/tolink/BigCursor';
 import { CONFIG_ROWS } from '../ui/tolink/data';
+import { LAUNCH_BUTTON_CENTER } from '../ui/tolink/MainArea';
 import { Stage } from '../ui/tolink/Stage';
 import { TolinkDesktop } from '../ui/tolink/TolinkDesktop';
 import { tol } from '../ui/tolink/tokens';
 
 const WINDOW_TOP = tol.layout.stageTop;
 const CARD = { x: 172.5, y: 309.5 };
-const CLICK = CARD;
+const LAUNCH = LAUNCH_BUTTON_CENTER;
 
 const CURSOR_START = 24;
 const CURSOR_END = 58;
 const PRESS_START = 60;
 const CLICK_FRAME = 64;
-const RIPPLE_START = CLICK_FRAME;
 const RIPPLE_DURATION = 44;
 const PUSH_START = 88;
 const PUSH_END = 132;
@@ -23,7 +23,15 @@ const SCROLL_START = 156;
 const SCROLL_END = 256;
 const CRANE_START = 232;
 const CRANE_END = 322;
-export const S03_DURATION = 352;
+
+// The pointer waits for the crane to settle, then crosses the window to the
+// toolbar so it never rides the camera transform.
+const MOVE2_START = 330;
+const MOVE2_END = 378;
+const MOVE2_CONTROL = { x: 620, y: 150 };
+const PRESS2_START = 390;
+const CLICK2_FRAME = 394;
+export const S03_DURATION = 486;
 
 const FOCUS_START = { x: 530, y: 330 };
 const FOCUS_END = { x: 960, y: 540 };
@@ -39,13 +47,37 @@ const pushEase = Easing.bezier(0.4, 0, 0.2, 1);
 const craneEase = Easing.bezier(0.2, 0, 0.25, 1);
 
 const cursorAt = (frame: number) => {
-  const p = cursorEase(clamp01((frame - CURSOR_START) / (CURSOR_END - CURSOR_START)));
+  if (frame < MOVE2_START) {
+    const p = cursorEase(clamp01((frame - CURSOR_START) / (CURSOR_END - CURSOR_START)));
+    const q = 1 - p;
+    return {
+      x: q * q * 1320 + 2 * q * p * 720 + p * p * CARD.x,
+      y: q * q * 800 + 2 * q * p * 640 + p * p * CARD.y,
+    };
+  }
+
+  const p = cursorEase(clamp01((frame - MOVE2_START) / (MOVE2_END - MOVE2_START)));
   const q = 1 - p;
   return {
-    x: q * q * 1320 + 2 * q * p * 720 + p * p * CARD.x,
-    y: q * q * 800 + 2 * q * p * 640 + p * p * CARD.y,
-    p,
+    x: q * q * CARD.x + 2 * q * p * MOVE2_CONTROL.x + p * p * LAUNCH.x,
+    y: q * q * CARD.y + 2 * q * p * MOVE2_CONTROL.y + p * p * LAUNCH.y,
   };
+};
+
+const pressAt = (frame: number, pressStart: number, clickFrame: number) => {
+  const pressIn = Easing.out(Easing.cubic)(clamp01((frame - pressStart) / 3));
+  const pressOut = Easing.inOut(Easing.sin)(clamp01((frame - (clickFrame + 1)) / 5));
+  return pressIn * (1 - pressOut);
+};
+
+const hoverAt = (
+  frame: number,
+  cursor: { x: number; y: number },
+  target: { x: number; y: number },
+  clickFrame: number,
+) => {
+  const raw = 1 - Easing.inOut(Easing.sin)(clamp01((dist(cursor, target) - 45) / 130));
+  return frame < clickFrame ? raw : raw * (1 - clamp01((frame - clickFrame) / 20));
 };
 
 const cameraAt = (frame: number) => {
@@ -86,9 +118,6 @@ const cameraAt = (frame: number) => {
   };
 };
 
-const rippleRadius = (frame: number) =>
-  24 + 820 * clamp01((frame - RIPPLE_START) / RIPPLE_DURATION);
-
 const ROW_TOP = (i: number) => WINDOW_TOP + 163.5 + i * 42.5;
 
 // 18 rows are inside the viewport; their cascade accelerates as it travels down.
@@ -122,25 +151,34 @@ const AppClip: FC<{ children: ReactNode; zIndex: number }> = ({ children, zIndex
   </div>
 );
 
-const Ripples: FC<{ frame: number }> = ({ frame }) => {
+type ClickBurstProps = {
+  frame: number;
+  center: { x: number; y: number };
+  clickFrame: number;
+};
+
+const ClickBurst: FC<ClickBurstProps> = ({ frame, center, clickFrame }) => {
+  if (frame < clickFrame) return null;
+
+  const age = frame - clickFrame;
   const rings = [0, 10, 20].map((delay, index) => {
-    const p = clamp01((frame - RIPPLE_START - delay) / RIPPLE_DURATION);
+    const p = clamp01((frame - clickFrame - delay) / RIPPLE_DURATION);
     const radius = 24 + 820 * p;
     const opacity = (0.82 - index * 0.16) * Math.pow(1 - p, 0.9);
-    return { p, radius, opacity, delay };
+    return { radius, opacity, delay };
   });
-  const washP = clamp01((frame - RIPPLE_START) / (RIPPLE_DURATION + 18));
-  const washR = 900 * clamp01((frame - RIPPLE_START) / (RIPPLE_DURATION + 18));
-  const flashP = clamp01((frame - CLICK_FRAME) / 16);
+  const washP = clamp01(age / (RIPPLE_DURATION + 18));
+  const washR = 900 * washP;
+  const flashP = clamp01(age / 16);
 
   return (
     <AppClip zIndex={40}>
-      {frame >= RIPPLE_START && washP < 1 ? (
+      {washP < 1 ? (
         <div
           style={{
             position: 'absolute',
-            left: CLICK.x - washR,
-            top: CLICK.y - WINDOW_TOP - washR,
+            left: center.x - washR,
+            top: center.y - WINDOW_TOP - washR,
             width: washR * 2,
             height: washR * 2,
             borderRadius: '50%',
@@ -151,13 +189,13 @@ const Ripples: FC<{ frame: number }> = ({ frame }) => {
         />
       ) : null}
       {rings.map((ring) =>
-        frame < RIPPLE_START + ring.delay || ring.opacity <= 0.003 ? null : (
+        frame < clickFrame + ring.delay || ring.opacity <= 0.003 ? null : (
           <div
             key={ring.delay}
             style={{
               position: 'absolute',
-              left: CLICK.x - ring.radius,
-              top: CLICK.y - WINDOW_TOP - ring.radius,
+              left: center.x - ring.radius,
+              top: center.y - WINDOW_TOP - ring.radius,
               width: ring.radius * 2,
               height: ring.radius * 2,
               borderRadius: '50%',
@@ -167,32 +205,32 @@ const Ripples: FC<{ frame: number }> = ({ frame }) => {
           />
         ),
       )}
-      {frame >= CLICK_FRAME && flashP < 1 ? (
-        <div
-          style={{
-            position: 'absolute',
-            left: CLICK.x - 48 * flashP - 48,
-            top: CLICK.y - WINDOW_TOP - 48 * flashP - 48,
-            width: (48 + 48 * flashP) * 2,
-            height: (48 + 48 * flashP) * 2,
-            borderRadius: '50%',
-            background: `radial-gradient(circle, rgba(255,255,255,${0.34 * (1 - flashP)}) 0%, rgba(68,162,255,${0.12 * (1 - flashP)}) 45%, rgba(68,162,255,0) 70%)`,
-          }}
-        />
-      ) : null}
-      {frame >= CLICK_FRAME && flashP < 1 ? (
-        <div
-          style={{
-            position: 'absolute',
-            left: CLICK.x - 20 - 52 * flashP,
-            top: CLICK.y - WINDOW_TOP - 20 - 52 * flashP,
-            width: (20 + 52 * flashP) * 2,
-            height: (20 + 52 * flashP) * 2,
-            borderRadius: '50%',
-            border: `4px solid rgba(255, 255, 255, ${0.85 * (1 - flashP)})`,
-            boxShadow: `0 0 20px rgba(255, 255, 255, ${0.35 * (1 - flashP)})`,
-          }}
-        />
+      {flashP < 1 ? (
+        <>
+          <div
+            style={{
+              position: 'absolute',
+              left: center.x - 48 * flashP - 48,
+              top: center.y - WINDOW_TOP - 48 * flashP - 48,
+              width: (48 + 48 * flashP) * 2,
+              height: (48 + 48 * flashP) * 2,
+              borderRadius: '50%',
+              background: `radial-gradient(circle, rgba(255,255,255,${0.34 * (1 - flashP)}) 0%, rgba(68,162,255,${0.12 * (1 - flashP)}) 45%, rgba(68,162,255,0) 70%)`,
+            }}
+          />
+          <div
+            style={{
+              position: 'absolute',
+              left: center.x - 20 - 52 * flashP,
+              top: center.y - WINDOW_TOP - 20 - 52 * flashP,
+              width: (20 + 52 * flashP) * 2,
+              height: (20 + 52 * flashP) * 2,
+              borderRadius: '50%',
+              border: `4px solid rgba(255, 255, 255, ${0.85 * (1 - flashP)})`,
+              boxShadow: `0 0 20px rgba(255, 255, 255, ${0.35 * (1 - flashP)})`,
+            }}
+          />
+        </>
       ) : null}
     </AppClip>
   );
@@ -203,12 +241,10 @@ export const S03: FC = () => {
   const camera = cameraAt(frame);
   const cursor = cursorAt(frame);
 
-  const pressIn = Easing.out(Easing.cubic)(clamp01((frame - PRESS_START) / 3));
-  const pressOut = Easing.inOut(Easing.sin)(clamp01((frame - (CLICK_FRAME + 1)) / 5));
-  const press = pressIn * (1 - pressOut);
-
-  const hoverRaw = 1 - Easing.inOut(Easing.sin)(clamp01((dist(cursor, CARD) - 45) / 130));
-  const glow = frame < CLICK_FRAME ? hoverRaw : hoverRaw * (1 - clamp01((frame - CLICK_FRAME) / 20));
+  const press = pressAt(frame, PRESS_START, CLICK_FRAME);
+  const press2 = pressAt(frame, PRESS2_START, CLICK2_FRAME);
+  const glow = hoverAt(frame, cursor, CARD, CLICK_FRAME);
+  const launchGlow = hoverAt(frame, cursor, LAUNCH, CLICK2_FRAME);
 
   const scrollP = Easing.inOut(Easing.cubic)(
     clamp01((frame - SCROLL_START) / (SCROLL_END - SCROLL_START)),
@@ -246,11 +282,13 @@ export const S03: FC = () => {
             scrollbarThumbHeight={160}
             count={count}
             headerChecked={headerChecked}
+            launchFeedback={{ glow: launchGlow, press: press2 }}
             elevation={frame < CRANE_START ? 0.6 : mix(0.6, 1, craneEase(clamp01((frame - CRANE_START) / (CRANE_END - CRANE_START))))}
             cursor={false}
           />
-          <Ripples frame={frame} />
-          <BigCursor x={cursor.x} y={cursor.y} scale={1 - 0.12 * press} />
+          <ClickBurst frame={frame} center={CARD} clickFrame={CLICK_FRAME} />
+          <ClickBurst frame={frame} center={LAUNCH} clickFrame={CLICK2_FRAME} />
+          <BigCursor x={cursor.x} y={cursor.y} scale={1 - 0.12 * (press + press2)} />
         </div>
       </div>
     </Stage>

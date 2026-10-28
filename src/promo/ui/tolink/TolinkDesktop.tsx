@@ -20,6 +20,7 @@ type TolinkDesktopProps = {
   count?: number;
   headerChecked?: boolean;
   elevation?: number;
+  launchFeedback?: { glow: number; press: number };
 };
 
 export const TolinkDesktop: FC<TolinkDesktopProps> = ({
@@ -35,6 +36,7 @@ export const TolinkDesktop: FC<TolinkDesktopProps> = ({
   count,
   headerChecked,
   elevation = 1,
+  launchFeedback,
 }) => (
   <div
     style={{
@@ -60,6 +62,7 @@ export const TolinkDesktop: FC<TolinkDesktopProps> = ({
       scrollbarThumbHeight={scrollbarThumbHeight}
       count={count}
       headerChecked={headerChecked}
+      launchFeedback={launchFeedback}
     />
     <RightRail />
     {cursor ?? <CursorGlyph style={{ position: 'absolute', left: 751.5, top: 786 }} />}

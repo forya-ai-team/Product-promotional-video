@@ -7,10 +7,18 @@ import { tol } from './tokens';
 type ToolbarButtonProps = {
   width: number;
   background: string;
+  glow?: number;
+  press?: number;
   children: ReactNode;
 };
 
-const ToolbarButton: FC<ToolbarButtonProps> = ({ width, background, children }) => (
+const ToolbarButton: FC<ToolbarButtonProps> = ({
+  width,
+  background,
+  glow = 0,
+  press = 0,
+  children,
+}) => (
   <div
     style={{
       width,
@@ -25,11 +33,36 @@ const ToolbarButton: FC<ToolbarButtonProps> = ({ width, background, children }) 
       gap: 5,
       paddingBottom: 2,
       boxSizing: 'border-box',
+      filter: glow > 0.001 ? `brightness(${1 + 0.07 * glow})` : undefined,
+      boxShadow:
+        glow > 0.001 ? `0 ${3 * glow}px ${12 * glow}px rgba(0, 0, 0, ${0.22 * glow})` : undefined,
+      transform: press > 0.001 ? `scale(${1 - 0.035 * press})` : undefined,
     }}
   >
     {children}
   </div>
 );
+
+const TOOLBAR_GAP = 14;
+const TOOLBAR_BUTTON_HEIGHT = 30;
+const TOOLBAR_WIDTH = {
+  newConfig: 100,
+  batchDelete: 112,
+  import: 78,
+  launch: 130,
+  template: 99,
+} as const;
+
+// 批量启动 is second from the right; click target for S03.
+export const LAUNCH_BUTTON_CENTER = {
+  x:
+    tol.layout.width -
+    tol.layout.toolbarRight -
+    TOOLBAR_WIDTH.template -
+    TOOLBAR_GAP -
+    TOOLBAR_WIDTH.launch / 2,
+  y: tol.layout.stageTop + tol.layout.toolbarTop + TOOLBAR_BUTTON_HEIGHT / 2,
+} as const;
 
 const ActionButtons: FC = () => (
   <div
@@ -224,6 +257,7 @@ type MainAreaProps = {
   scrollbarThumbHeight?: number;
   count?: number;
   headerChecked?: boolean;
+  launchFeedback?: { glow: number; press: number };
 };
 
 const alwaysOne = () => 1;
@@ -238,6 +272,7 @@ export const MainArea: FC<MainAreaProps> = ({
   scrollbarThumbHeight = 625,
   count = 30,
   headerChecked = true,
+  launchFeedback,
 }) => {
   return (
     <div
@@ -269,25 +304,30 @@ export const MainArea: FC<MainAreaProps> = ({
           right: 21,
           top: tol.layout.toolbarTop,
           display: 'flex',
-          gap: 14,
+          gap: TOOLBAR_GAP,
         }}
       >
-        <ToolbarButton width={100} background={tol.color.primary}>
+        <ToolbarButton width={TOOLBAR_WIDTH.newConfig} background={tol.color.primary}>
           <PlusGlyph size={10} />
           <span>新建配置</span>
         </ToolbarButton>
-        <ToolbarButton width={112} background={tol.color.danger}>
+        <ToolbarButton width={TOOLBAR_WIDTH.batchDelete} background={tol.color.danger}>
           <span>批量删除({count})</span>
         </ToolbarButton>
-        <ToolbarButton width={78} background={tol.color.success}>
+        <ToolbarButton width={TOOLBAR_WIDTH.import} background={tol.color.success}>
           <ImportGlyph />
           <span>导入</span>
         </ToolbarButton>
-        <ToolbarButton width={130} background={tol.color.warning}>
+        <ToolbarButton
+          width={TOOLBAR_WIDTH.launch}
+          background={tol.color.warning}
+          glow={launchFeedback?.glow}
+          press={launchFeedback?.press}
+        >
           <SendGlyph />
           <span>批量启动({count})</span>
         </ToolbarButton>
-        <ToolbarButton width={99} background={tol.color.neutral}>
+        <ToolbarButton width={TOOLBAR_WIDTH.template} background={tol.color.neutral}>
           <span>Tolink模板</span>
         </ToolbarButton>
       </div>
