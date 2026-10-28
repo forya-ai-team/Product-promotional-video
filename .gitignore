@@ -1,0 +1,15 @@
+node_modules/
+out/
+vendor/
+.workbuddy/
+.DS_Store
+*.log
+
+# raw user screenshots stay local (may contain live IPs / accounts)
+screenshots/*
+!screenshots/README.md
+
+# raw reference screenshots (local only; may contain live endpoints)
+public/refs/*
+!public/refs/README.md
+screenshot/

@@ -1,0 +1,38 @@
+{
+  "name": "product-promotional-video",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Product promotional video built with Remotion, HTML/CSS, and three.js",
+  "scripts": {
+    "dev": "remotion studio src/index.ts",
+    "compositions": "remotion compositions src/index.ts",
+    "typecheck": "tsc --noEmit",
+    "render": "remotion render src/index.ts ProductPromo out/final/promo-bgm.mp4 --codec=h264 --crf=18 --pixel-format=yuv420p --audio-codec=aac --audio-bitrate=320k",
+    "render:nobgm": "remotion render src/index.ts ProductPromo out/final/promo-nobgm.mp4 --props=props-nobgm.json --codec=h264 --crf=18 --pixel-format=yuv420p --audio-codec=aac --audio-bitrate=320k",
+    "qa:media": "node scripts/qa-media.mjs",
+    "qa:diff": "node scripts/diff-refs.mjs out/qa/S03-static-f0.png"
+  },
+  "dependencies": {
+    "@react-three/fiber": "9.8.2",
+    "@remotion/cli": "4.0.539",
+    "@remotion/three": "4.0.539",
+    "@remotion/transitions": "4.0.539",
+    "react": "19.2.3",
+    "react-dom": "19.2.3",
+    "remotion": "4.0.539",
+    "three": "0.186.1"
+  },
+  "devDependencies": {
+    "@types/node": "24.13.6",
+    "@types/pngjs": "^6.0.5",
+    "@types/react": "19.2.7",
+    "@types/react-dom": "19.2.7",
+    "@types/three": "0.186.0",
+    "pixelmatch": "^8.0.0",
+    "pngjs": "^7.0.0",
+    "typescript": "5.9.3"
+  },
+  "engines": {
+    "node": ">=20.19.0"
+  }
+}
