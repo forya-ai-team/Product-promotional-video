@@ -59,7 +59,7 @@ export const SCENES: SceneSpec[] = [
     durationInFrames: sec(30),
     transitionAfter: { kind: 'portal-wipe', durationInFrames: 48 },
     cards: ['row-embed'],
-    acceptanceFrames: [sec(5), sec(15), sec(29)],
+    acceptanceFrames: [sec(6), sec(15), sec(29)],
   },
   {
     id: 'S06',

@@ -134,3 +134,44 @@ export const RAIL_ITEMS: RailItem[] = [
   { label: 'TK脚本', icon: 'nav-icon-8', iconLeft: 18, iconTop: 503, iconWidth: 32, iconHeight: 31, labelTop: 536 },
   { label: 'Coze设置', icon: 'nav-icon-9', iconLeft: 17.5, iconTop: 567, iconWidth: 33, iconHeight: 29, labelTop: 599.5 },
 ];
+
+export type LaunchedProfile = {
+  name: string;
+  ip: string;
+  region: string;
+  avatar: string;
+};
+
+// First three rows of S03's list; IPs stay in TEST-NET ranges per D7.
+export const LAUNCHED_PROFILES: LaunchedProfile[] = [
+  { name: '美国241', ip: '203.0.113.209', region: 'US - New York City', avatar: 'textures/profile/avatar-1.jpg' },
+  { name: '美国103', ip: '198.51.100.109', region: 'US - New York City', avatar: 'textures/profile/avatar-2.jpg' },
+  { name: '云手机9', ip: '192.0.2.63', region: 'US - New York City', avatar: 'textures/profile/avatar-3.jpg' },
+];
+
+export type ProxyToast = {
+  ip: string;
+  region: string;
+};
+
+const REGIONS = [
+  'US - New York City',
+  'US - Los Angeles',
+  'US - Chicago',
+  'US - Dallas',
+  'US - Seattle',
+  'US - Miami',
+  'US - Atlanta',
+  'US - San Jose',
+  'US - Boston',
+  'US - Phoenix',
+];
+
+// One proxy confirmation per launched profile, capped at the 90 S03 rows.
+export const PROXY_FEED: ProxyToast[] = CONFIG_ROWS.map((row, index) => ({
+  ip: row.ip,
+  region: index < 2 ? 'US - New York City' : REGIONS[index % REGIONS.length],
+}));
+
+// Static reference frame only shows the first two.
+export const PROXY_TOASTS = PROXY_FEED.slice(0, 2);

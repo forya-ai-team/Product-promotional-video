@@ -6,8 +6,7 @@ export const Stage: FC<{ children: ReactNode }> = ({ children }) => (
   <AbsoluteFill
     style={{
       fontFamily: tol.fontFamily,
-      background:
-        'radial-gradient(130% 100% at 50% 0%, #1A2440 0%, #0C1120 56%, #06080F 100%)',
+      background: 'radial-gradient(130% 100% at 50% 0%, #1A2440 0%, #0C1120 56%, #06080F 100%)'
     }}
   >
     <div

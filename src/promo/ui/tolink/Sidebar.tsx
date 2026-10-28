@@ -1,4 +1,4 @@
-import type { FC } from 'react';
+import type { FC, ReactNode } from 'react';
 import { Img, staticFile } from 'remotion';
 import { PlusGlyph, RefreshGlyph } from './glyphs';
 import { tol } from './tokens';
@@ -16,7 +16,48 @@ export type CardFeedback = {
   press: number;
 };
 
-export const Sidebar: FC<{ cardFeedback?: CardFeedback }> = ({ cardFeedback }) => {
+const SidebarScrollbar: FC = () => (
+  <div style={{ position: 'absolute', left: 259, top: 164, width: 10, bottom: 0 }}>
+    <div
+      style={{
+        position: 'absolute',
+        left: 1.5,
+        top: 8,
+        width: 8,
+        height: 5.5,
+        background: tol.color.scrollbar,
+        clipPath: 'polygon(50% 0%, 100% 100%, 0% 100%)',
+      }}
+    />
+    <div
+      style={{
+        position: 'absolute',
+        left: 0.5,
+        top: 21,
+        width: 9,
+        height: 747,
+        borderRadius: 4.5,
+        background: tol.color.scrollbar,
+      }}
+    />
+  </div>
+);
+
+type SidebarProps = {
+  cardFeedback?: CardFeedback;
+  cardLeft?: number;
+  cardWidth?: number;
+  showScrollbar?: boolean;
+  children?: ReactNode;
+};
+
+export const Sidebar: FC<SidebarProps> = ({
+  cardFeedback,
+  cardLeft = 73.5,
+  cardWidth = 198,
+  showScrollbar = false,
+  children,
+}) => {
   const glow = cardFeedback?.glow ?? 0;
   const press = cardFeedback?.press ?? 0;
   return (
@@ -104,9 +145,9 @@ export const Sidebar: FC<{ cardFeedback?: CardFeedback }> = ({ cardFeedback }) =
       <div
         style={{
           position: 'absolute',
-          left: 73.5,
+          left: cardLeft,
           top: 181,
-          width: 198,
+          width: cardWidth,
           height: 109,
           borderRadius: 8,
           background: tol.color.brandCard,
@@ -142,6 +183,9 @@ export const Sidebar: FC<{ cardFeedback?: CardFeedback }> = ({ cardFeedback }) =
           点击管理配置
         </div>
       </div>
+
+      {children}
+      {showScrollbar ? <SidebarScrollbar /> : null}
     </div>
   );
 };
