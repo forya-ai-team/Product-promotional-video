@@ -25,7 +25,7 @@ export const SCENES: SceneSpec[] = [
     title: '冷开场 / 品牌',
     durationInFrames: sec(14),
     transitionAfter: { kind: 'flash-cut', durationInFrames: 10 },
-    cards: ['text-as-mask'],
+    cards: ['orbit-ring-title-open', 'integration-hub-map'],
     acceptanceFrames: [sec(2), sec(7), sec(13)],
   },
   {

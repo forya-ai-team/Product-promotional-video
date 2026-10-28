@@ -1,6 +1,7 @@
 import type { FC } from 'react';
 import { Composition } from 'remotion';
 import { ProductPromo } from './promo/Main';
+import { S01, S01_DURATION } from './promo/scenes/S01';
 import { S03, S03_DURATION } from './promo/scenes/S03';
 import { S03Static } from './promo/scenes/S03Static';
 import { FPS, TOTAL_FRAMES } from './promo/timeline';
@@ -13,6 +14,14 @@ export const RemotionRoot: FC = () => {
         id="ProductPromo"
         component={ProductPromo}
         durationInFrames={TOTAL_FRAMES}
+        fps={FPS}
+        width={1920}
+        height={1080}
+      />
+      <Composition
+        id="S01"
+        component={S01}
+        durationInFrames={S01_DURATION}
         fps={FPS}
         width={1920}
         height={1080}

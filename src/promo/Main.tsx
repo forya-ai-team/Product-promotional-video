@@ -3,6 +3,7 @@ import { fade } from '@remotion/transitions/fade';
 import type { ReactNode } from 'react';
 import { AbsoluteFill } from 'remotion';
 import { PlaceholderScene } from './scenes/PlaceholderScene';
+import { S01 } from './scenes/S01';
 import { tokens } from './theme/tokens';
 import { SCENES, type SceneSpec } from './timeline';
 
@@ -31,7 +32,11 @@ export const ProductPromo = () => {
         key={scene.id}
         durationInFrames={scene.durationInFrames}
       >
-        <PlaceholderScene scene={scene} index={index} />
+        {scene.id === 'S01' ? (
+          <S01 />
+        ) : (
+          <PlaceholderScene scene={scene} index={index} />
+        )}
       </TransitionSeries.Sequence>,
     );
 
