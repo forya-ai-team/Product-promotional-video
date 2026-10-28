@@ -56,10 +56,10 @@ export const SCENES: SceneSpec[] = [
   {
     id: 'S05',
     title: '核心功能 C',
-    durationInFrames: sec(30),
+    durationInFrames: sec(15),
     transitionAfter: { kind: 'portal-wipe', durationInFrames: 48 },
     cards: ['row-embed'],
-    acceptanceFrames: [sec(6), sec(15), sec(29)],
+    acceptanceFrames: [sec(4), sec(8), sec(11), sec(13)],
   },
   {
     id: 'S06',
@@ -72,11 +72,11 @@ export const SCENES: SceneSpec[] = [
   {
     id: 'S07',
     title: '证据 / 指标',
-    durationInFrames: sec(20),
+    durationInFrames: sec(23),
     transitionAfter: { kind: 'cut', durationInFrames: 0 },
     cards: ['chart-live-moves'],
     styles: ['axis-rescale-shock'],
-    acceptanceFrames: [sec(4), sec(10), sec(19)],
+    acceptanceFrames: [sec(4), sec(11), sec(22)],
   },
   {
     id: 'S08',
