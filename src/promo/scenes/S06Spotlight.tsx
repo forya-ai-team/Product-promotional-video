@@ -46,8 +46,8 @@ const PUSH_EASE = Easing.bezier(0.35, 0, 0.2, 1);
 const POP_EASE = Easing.bezier(0.2, 1.25, 0.3, 1);
 const RESEAT_EASE = Easing.bezier(0.4, 0, 0.3, 1.05);
 
-const NOTE_LINE_1 = 'TikTok 私信';
-const NOTE_LINE_2 = 'AI 自动应答';
+const NOTE_LINE_1 = 'AI 矩阵聚合';
+const NOTE_LINE_2 = '全天候托管与转化全链路执行';
 
 const mix = (a: number, b: number, t: number) => a + (b - a) * t;
 
@@ -437,9 +437,9 @@ export const S06Spotlight: FC = () => {
             <div
               style={{
                 position: 'absolute',
-                left: 1076,
+                left: 1030,
                 top: 420,
-                width: 380,
+                width: 760,
                 height: 300,
                 transform: `translateZ(${(noteZ - 1).toFixed(2)}px) translateY(${((1 - noteIn) * 26).toFixed(2)}px)`,
                 background:
@@ -451,9 +451,9 @@ export const S06Spotlight: FC = () => {
             <div
               style={{
                 position: 'absolute',
-                left: 1100,
+                left: 1080,
                 top: 640,
-                width: 320,
+                width: 660,
                 height: 80,
                 transform: 'translateZ(2px)',
                 background: 'radial-gradient(ellipse at 50% 50%, rgba(0,0,0,0.55), transparent 70%)',
@@ -464,7 +464,7 @@ export const S06Spotlight: FC = () => {
             <div
               style={{
                 position: 'absolute',
-                left: 1110,
+                left: 1080,
                 top: 470,
                 width: 'max-content',
                 whiteSpace: 'nowrap',
@@ -476,7 +476,7 @@ export const S06Spotlight: FC = () => {
                 lineHeight: 1.12,
               }}
             >
-              <div style={{ fontSize: 56, fontWeight: 700, color: '#F6F3EC', textShadow: '0 2px 18px rgba(0,0,0,0.6)' }}>
+              <div style={{ fontSize: 52, fontWeight: 700, color: '#F6F3EC', textShadow: '0 2px 18px rgba(0,0,0,0.6)' }}>
                 {NOTE_LINE_1}
               </div>
               <div style={{ position: 'relative', display: 'inline-block', marginTop: 4 }}>
@@ -494,7 +494,7 @@ export const S06Spotlight: FC = () => {
                 <div
                   style={{
                     position: 'relative',
-                    fontSize: 56,
+                    fontSize: 52,
                     fontWeight: 700,
                     color: hl > 0.55 ? '#14110C' : '#F6F3EC',
                   }}

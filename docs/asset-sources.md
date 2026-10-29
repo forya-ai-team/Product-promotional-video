@@ -70,5 +70,5 @@ Pexels License，同上；128×128 去 EXIF。对应“美国241 / 美国103 / �
 ### 5.4 S06Spotlight（D34）
 
 - 未新增素材：卡片复用 `ChatPanel`（`public/textures/S06/*` 头像 + 同一套字体），舞台复用 `S06Desktop`，噪声颗粒为运行时 `feTurbulence` 生成的 data URI，体积光/尘埃为纯 CSS/DOM。
-- 注记文案“TikTok 私信 / AI 自动应答”是 Agent 草稿，不属于截图可追溯文案，也**不是**产品功能名的正式来源；发布前须按 `docs/brief.md` 的功能名替换或经用户确认（D34）。
+- 注记文案「AI 矩阵聚合 / 全天候托管与转化全链路执行」由用户 2026-10-29 直接给定（D47），不再是 Agent 草稿；仍不属于截图可追溯文案，改动前须再确认。
 

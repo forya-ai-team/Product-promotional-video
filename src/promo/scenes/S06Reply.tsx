@@ -23,8 +23,8 @@ const CYAN = '#8FD8FF';
 const FINAL: CamKey2D = { frame: 0, cx: 960, cy: 540, zoom: 1.0, rotX: 2, rotY: -6, rotZ: -1, persp: 1200 };
 const CAM: CamKey2D[] = [FINAL, { ...FINAL, frame: DURATION }];
 
-const NOTE_LINE_1 = 'TikTok 私信';
-const NOTE_LINE_2 = 'AI 自动应答';
+const NOTE_LINE_1 = 'AI 矩阵聚合';
+const NOTE_LINE_2 = '全天候托管与转化全链路执行';
 
 export const S06Reply: FC = () => {
   const f = useCurrentFrame();
@@ -154,9 +154,9 @@ export const S06Reply: FC = () => {
               <div
                 style={{
                   position: 'absolute',
-                  left: 1076,
+                  left: 1030,
                   top: 420,
-                  width: 380,
+                  width: 760,
                   height: 300,
                   transform: 'translateZ(3px)',
                   background:
@@ -168,7 +168,7 @@ export const S06Reply: FC = () => {
               <div
                 style={{
                   position: 'absolute',
-                  left: 1110,
+                  left: 1080,
                   top: 470,
                   width: 'max-content',
                   whiteSpace: 'nowrap',
@@ -179,7 +179,7 @@ export const S06Reply: FC = () => {
                   lineHeight: 1.12,
                 }}
               >
-                <div style={{ fontSize: 56, fontWeight: 700, color: '#F6F3EC', textShadow: '0 2px 18px rgba(0,0,0,0.6)' }}>
+                <div style={{ fontSize: 52, fontWeight: 700, color: '#F6F3EC', textShadow: '0 2px 18px rgba(0,0,0,0.6)' }}>
                   {NOTE_LINE_1}
                 </div>
                 <div style={{ position: 'relative', display: 'inline-block', marginTop: 4 }}>
@@ -194,7 +194,7 @@ export const S06Reply: FC = () => {
                       borderRadius: 5,
                     }}
                   />
-                  <div style={{ position: 'relative', fontSize: 56, fontWeight: 700, color: '#14110C' }}>
+                  <div style={{ position: 'relative', fontSize: 52, fontWeight: 700, color: '#14110C' }}>
                     {NOTE_LINE_2}
                   </div>
                 </div>

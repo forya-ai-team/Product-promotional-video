@@ -113,14 +113,6 @@ export const RemotionRoot: FC = () => {
         height={1080}
       />
       <Composition
-        id="S06Spotlight"
-        component={S06Spotlight}
-        durationInFrames={S06_SPOTLIGHT_DURATION}
-        fps={FPS}
-        width={1920}
-        height={1080}
-      />
-      <Composition
         id="S06Reply"
         component={S06ReplyFull}
         durationInFrames={S06_DURATION}
