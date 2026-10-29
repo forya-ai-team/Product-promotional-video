@@ -2,6 +2,7 @@ import type { FC } from 'react';
 import { AbsoluteFill, Easing, useCurrentFrame } from 'remotion';
 import { DmexWordmark } from '../ui/brand/DmexWordmark';
 import { BrandField, BrandTagline, CENTER } from '../ui/brand/BrandField';
+import { S01_SPEED } from '../timeline';
 
 const WORDMARK_WIDTH = 560;
 const WORDMARK_HEIGHT = (WORDMARK_WIDTH * 71) / 250;
@@ -15,7 +16,7 @@ const segment = (frame: number, start: number, duration: number, easing = ENTER)
   easing(clamp01((frame - start) / duration));
 
 export const S01: FC = () => {
-  const frame = useCurrentFrame();
+  const frame = useCurrentFrame() * S01_SPEED;
   const wordIn = segment(frame, 20, 40);
 
   return (

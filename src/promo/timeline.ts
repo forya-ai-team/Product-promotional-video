@@ -3,12 +3,18 @@ export const sec = (seconds: number) => Math.round(seconds * FPS);
 
 // Scene durations live here so the film timeline and the individual
 // compositions cannot drift apart. Scene files import their own length back.
-export const S01_DURATION = sec(14); // 420
+// S01 is choreographed at 14s (BrandField's constants are shared with the
+// settled field S07 freezes), so the 10s cut plays it at 1.4x instead of
+// retiming every beat.
+const S01_AUTHORED_DURATION = sec(14); // 420
+export const S01_DURATION = sec(10); // 300
+export const S01_SPEED = S01_AUTHORED_DURATION / S01_DURATION; // 1.4
 export const S02_DURATION = sec(5.5); // 165
-// S03's body is the approved 486f shot; the lead is the hold the portal-wipe
-// lands on before the pointer starts moving (scene frame 0 == body frame -24).
+// S03's body is the approved shot trimmed to 456f (D55); the lead is the hold
+// the portal-wipe lands on before the pointer starts moving (scene frame 0 ==
+// body frame -24).
 export const S03_LEAD = sec(0.8); // 24
-export const S03_DURATION = 486 + S03_LEAD; // 510
+export const S03_DURATION = 456 + S03_LEAD; // 480
 export const S04_DURATION = 464;
 export const S05_DURATION = 480;
 export const S05BEATCUT_DURATION = 540;
@@ -48,7 +54,8 @@ export const SCENES: SceneSpec[] = [
     durationInFrames: S01_DURATION,
     transitionAfter: { kind: 'dissolve', durationInFrames: 16 },
     cards: ['orbit-ring-title-open', 'integration-hub-map'],
-    acceptanceFrames: [sec(2), sec(7), sec(13)],
+    // Authored beats (60 / 180 / 340 / 372) mapped through S01_SPEED.
+    acceptanceFrames: [43, 129, 243, 266, S01_DURATION - 1],
   },
   {
     id: 'S02',
@@ -65,15 +72,15 @@ export const SCENES: SceneSpec[] = [
     transitionAfter: { kind: 'cut', durationInFrames: 0 },
     cards: ['crane-rise-reveal'],
     // Body frame + S03_LEAD: 76f first row embed, 112f last row, 150f crane
-    // hold, 246f brake overshoot, 394f batch-launch click, 458f ripple done,
-    // 485f settled.
+    // hold, 246f brake overshoot, 394f batch-launch click, 440f ripple fading;
+    // the scene now cuts at body 455 (D55), so 458f is out of the shot.
     acceptanceFrames: [
       76 + S03_LEAD,
       112 + S03_LEAD,
       150 + S03_LEAD,
       246 + S03_LEAD,
       394 + S03_LEAD,
-      458 + S03_LEAD,
+      440 + S03_LEAD,
       S03_DURATION - 1,
     ],
   },
