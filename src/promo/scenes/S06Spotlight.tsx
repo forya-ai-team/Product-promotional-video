@@ -4,6 +4,7 @@ import { PageCam, type CamKey2D } from '../shots/spotlightHeroCard/PageCam';
 import { Dust, EASE, Grain, alpha, ramp } from '../shots/spotlightHeroCard/polish';
 import { ChatPanel } from '../ui/tolink/ChatPanel';
 import { S06Desktop } from '../ui/tolink/S06Desktop';
+import { S06_SPOTLIGHT_DURATION } from '../timeline';
 
 // spotlight-hero-card (vendor/video-shotcraft demos/opening/spotlight-hero-card,
 // pin 43bd349). Adapted: the chat column starts in its S06 slot, rises as a
@@ -24,7 +25,7 @@ const GOLD = '#E4C58A';
 const BEAM_CORE = 'rgba(255,250,238,0.98)';
 const LAMP = '255,238,212';
 
-const DURATION = 172;
+const DURATION = S06_SPOTLIGHT_DURATION;
 const LOCK = 34;
 const PUSH0 = 40;
 const PUSH1 = 58;
@@ -519,5 +520,3 @@ export const S06Spotlight: FC = () => {
     </AbsoluteFill>
   );
 };
-
-export const S06_SPOTLIGHT_DURATION = DURATION;

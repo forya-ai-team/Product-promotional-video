@@ -14,8 +14,6 @@ import {
 import { PROXY_FEED } from '../ui/tolink/data';
 import { Stage } from '../ui/tolink/Stage';
 
-export const S04_DURATION = 464;
-
 const CARD_START = 22;
 const CARD_STAGGER = 12;
 const CARD_FADE = 22;

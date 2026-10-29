@@ -522,12 +522,12 @@ node scripts/diff-refs-s06.mjs out/qa/S06-static-f0.png
 | 4 / 9 / 14 / 19（各 +12f） | 四行错峰入场（22px 上升、0→1） |
 | 20–34 | 光标、色票淡入 |
 | 30–42 | 铺垫静置（12f） |
-| 42 / 60 / 78 / 96 | 四次点击：Telegram → WhatsApp → Facebook → TikTok；拍头 6f 内透镜下移一行 + 换色、场色 cross-mix、计数滚动、色票换态；其余 12f 主题静置；光标在拍尾 10f 移动 + 3f 按压 |
-| 96–102 | 末拍落定 TikTok；102–114 光标淡出 |
-| 112–126 | 结语“已选择 TIKTOK”淡入 |
-| 126–165 | 终态 hold（39f）；全程极缓推镜 1→1.025（`inOut(sin)`，origin 960,560） |
+| 42 / 57 / 72 / 87 | 四次点击：Telegram → WhatsApp → Facebook → TikTok；拍头 6f 内透镜下移一行 + 换色、场色 cross-mix、计数滚动、色票换态；其余 9f 主题静置；光标在下一拍前 11f 起步（8f 到位）+ 3f 按压 |
+| 87–92 | 末拍落定 TikTok；93–105 光标淡出 |
+| 100–114 | 结语“已选择 TIKTOK”淡入 |
+| 114–165 | 终态 hold（51f）；全程极缓推镜 1→1.025（`inOut(sin)`，origin 960,560） |
 
-拍长 18f（100 BPM）；`snap(t) = 1−(1−t)^3.2`，只在拍头 6f 生效；透镜接住瞬间 `exp(−sinceBeat/3.2)` 提亮。点按环 28→92px / 26f（平台色环 + 延迟 6f 的白环），画在元素层。
+拍长 15f（120 BPM，与 `scripts/score.py` 的底鼓网格同源，见 §20）；`snap(t) = 1−(1−t)^3.2`，只在拍头 6f 生效；透镜接住瞬间 `exp(−sinceBeat/3.2)` 提亮。点按环 28→92px / 22f（平台色环 + 延迟 6f 的白环），画在元素层。
 
 ### 16.4 镜头卡与改编
 
@@ -535,7 +535,7 @@ node scripts/diff-refs-s06.mjs out/qa/S06-static-f0.png
 - 透镜：盒内裁切同一列表副本，内容越过透镜边缘才换字色/单选态，对应卡片的“胶囊 = 透镜”。
 - 保留：30f 铺垫、6f 跳变窗、squash、接住辉光、末拍后 hold、右上计数、左下色票。
 - 改编：卡片为 5 个词 / 深色场 / 列表位移；本片只有 4 个真实平台且必须落在第 4 个，列表位移会把 TikTok 推出视口（卡片要求词表 ≥ 拍数+2），所以改为**固定列表 + 透镜下移 + 光标逐拍点击**；场色改浅色（D16 白场基准），TikTok 拍降为中性灰 + 黑胶囊；不采用“每拍换字体”（平台属于同一产品 UI，换字体气质会削弱统一感），换肤由平台色 + 场色 + 图标承担。
-- 拍速：光标 10f 走 124px（≈0.33s），低于 §3.2 的真人交互 0.6–1.2s。本场是节拍器镜头，拍点优先，按 D33 记为速度例外；不适用于 S03–S05 的真人操作。
+- 拍速：光标 8f 走 124px（≈0.27s），低于 §3.2 的真人交互 0.6–1.2s。本场是节拍器镜头，拍点优先，按 D33 记为速度例外；不适用于 S03–S05 的真人操作。
 - 跳变中透镜加最多 5px 竖向模糊（`5·sin(π·t)`，落定归零），对应卡片的 SpeedBlur：透镜在行间的那 2–3 帧读成“在动”，不再是一条静止色条。
 
 ### 16.5 验收
@@ -647,3 +647,109 @@ node scripts/diff-refs-s06.mjs out/qa/S06-static-f0.png
 - 预览：`out/qa/S06Reply-preview.mp4`（658f / 21.93s / 1920×1080 / 30fps；ffprobe `nb_read_frames=658`）；九帧接触表 `out/qa/S06Reply-sheet.png`（188 / 210 / 227 / 320 / 372 / 395 / 500 / 545 / 657），由 `node scripts/contact-sheet.mjs out/qa/S06Reply-preview.mp4 out/qa/S06Reply-sheet.png 188,210,227,320,372,395,500,545,657 3` 从成片抽帧生成。
 - 报告卡无独立参考分辨率，不做像素 diff；内容按用户 2026-10-29 截图逐行转写，隐私处理：昵称截掉尾部、不出现头像与链接、`来源账号` 备注用 23px 灰字、画像摘要改写为中文；未使用 Lark logo（纯文字提及），符合 §11 第三方 logo 规则。
 - 待确认：报告字段是否需要与产品实际字段名对齐；S06 的最终时长与在 `timeline.ts` 中的槽位；SFX（触发 whoosh、分支 riser、推送 sparkle）未接。
+
+---
+
+## 19. 全片装配（2026-10-29）
+
+`timeline.ts` 现在是唯一事实源：场景时长、接缝类型/时长、验收帧都在一处；`Root.tsx` 的 `ProductPromo` 与各单场 composition 共用同一组常量。
+
+### 19.1 成片表（2751f / 91.70s @30fps）
+
+| # | composition | 本场时长 | 绝对帧 | 内容窗口 | 备注 |
+|---|---|---|---|---|---|
+| S01 | `S01` | 420f | 0–420 | 0:00.0–0:14.0 | 白场品牌开场；f0 为空白光场，字标 20f 起 |
+| S02 | `S02` | 165f | 404–569 | 0:13.5–0:19.0 | 四拍点选，收在 TikTok 黑药丸 |
+| S03 | `S03` | 510f | 521–1031 | 0:17.4–0:34.4 | 486f 本体 + 24f 入场呼吸；本体内帧号 = 成片帧 − 521 − 24 |
+| S04 | `S04` | 464f | 1031–1495 | 0:34.4–0:49.8 | 批量启动 → 连接页 |
+| S05 | `S05` | 540f | 1495–2035 | 0:49.8–1:07.8 | 3s 读页 + 爆量 + 99+ 爆发（局部 420f） |
+| S06 | `S06Reply` | 658f | 2019–2677 | 1:07.3–1:29.2 | Spotlight 172f + Reply 486f |
+| S07 | `S07EndCard` | 90f | 2661–2751 | 1:28.7–1:31.7 | Freeze `S01` f400；字标 + tagline hold 2.5s |
+
+接缝总重叠 96f；无额外安全尾帧（尾卡自带 hold）。
+
+### 19.2 接缝表
+
+| 接缝 | 帧窗 | 类型 / 时长 | 参数 |
+|---|---|---|---|
+| S01→S02 | 404–419 | dissolve / 16f | `fade()` 只淡入新场；两场底色同为 `#F7F9FD`，只交叉内容，不落黑 |
+| S02→S03 | 521–568 | portal-wipe / 48f | 起点 = `S02_LENS_RECT`（TikTok 镜片在 cam 1.025 下的屏幕矩形 509, 693.25, 902×108.7, r32.8）；40f 生长 `bezier(0.7,0,0.3,1)` + 8f 缓停；窗内 0.42→1 反向补偿；前 10f 淡入 + 药丸内壁 `#111318` 压暗，grow 0.55 前提亮；退出场 brightness 1→0.72、scale 1→1.03 |
+| S03→S04 | 1030/1031 | cut | 同一窗口、同一位置；批量启动点击在 S03 本体 394f（成片 939f） |
+| S04→S05 | 1494/1495 | cut | 两帧都是美国241 `select=1`，chrome 一致，只换主区 |
+| S05→S06 | 2019–2034 | dip-to-dark / 16f | 前 8f 只淡出旧场、后 8f 才淡入新场，中点露出 `#0b0d12` 容器；避免两 App 双曝光 |
+| S06→S07 | 2661–2676 | dissolve / 16f | `fade()` 只淡入新场；报告卡上叠出品牌白场 |
+
+全画面级冲击仍只有 S05 的 99+ 爆发（1/3）；签名转场 1 个（portal），因为本片是 6 场 A-cut，两条接缝必须是连贯硬切。
+
+### 19.3 装配期的取舍
+
+- **S03 +24f lead**：portal 的 48f 会吃掉入场；lead 让窗口落定后 0.8s 指针才起走（本体 24f）。本体常数一字未改，§10 的帧号仍是本体内帧号；成片帧号 = 521 + 24 + 本体内帧号。
+- **S06 reply 从 172f 起**：修复 bb4a517 留下的 34f 白尾（D39）。
+- **S07 尾卡**：复用 S01 末帧，不新做品牌资产；tagline 全片出现 2 次（开场/收尾），符合 §3.3。
+- **标题栏品牌**：窗口标题、菜单首项、窗口图标改为 Dmex（D41）；工具栏 `Tolink模板` 按钮未改，等确认。
+- **无音频**：`public/audio/bgm`、`sfx` 为空，本轮成片静音；BGM/SFX 是下一阶段。
+
+### 19.4 验收
+
+- `npx remotion compositions src/index.ts`：`ProductPromo` = **2751f / 91.70s**；单场 composition 与 `timeline.ts` 一致（S03 510 / S06 658 / S07 90）。
+- 接缝静帧（`out/qa/`）：`asm-f0409`（S01→S02 中段）、`asm3-f0536` / `asm3-f0545` / `asm-f0568`（portal 三段）、`asm-f1030` / `asm-f1031`（S03→S04）、`asm-f1494` / `asm-f1495`（S04→S05）、`asm-f2018` / `asm2-f2027` / `asm-f2035`（dip 前/中/后）、`asm-f2026`（dip 修复前的双曝光对照）、`asm-f2668`（S06→S07）、`asm-f2750`（尾卡）；S06 内部接缝 `asm-S06Reply-f171/172/173`。
+- 静音预览：`out/qa/promo-preview.mp4`（ffprobe `nb_read_frames=2751`、91.700s、1920×1080、30fps、CRF20、29.9 MB）；接触表 `out/qa/promo-preview-sheet.png`。带配乐成片见 §20 与 `out/final/promo-bgm.mp4`。
+- QA 例外：S05 的 0–90f 静止是读页段；S05→S06 的 2027f 是 dip 中点的暗帧，均非事故。
+- 3:00 下限本轮不满足（D37）；`npm run render` 输出的是 91.7s A-cut。
+
+### 19.5 遗留
+
+- BGM/SFX 未接；标题栏以外的 `Tolink模板` 按钮未改；S06 的 Oumi 命名按用户指令保留。
+
+---
+
+## 20. 配乐与音效：120 BPM 大调、鼓点驱动（2026-10-29）
+
+- **听感目标**：积极、有推进感的 house 宣传片底——四拍底鼓 + 2/4 拍手 + 每拍反拍的开镲 + 16 分 shaker + 反拍 sub bass + 短促大九和弦 stab + 明亮五声音阶 pluck 主音；长音 pad 只留给品牌开场、灯灭聚光灯和收尾终止式。全片 **A 大调（I–vi–IV–V）、120 BPM（15f/拍）**。上一版（D42：100 BPM / A 小调 / 暖 pad）被用户否为“太舒缓、让人犯困”，改判见 D44。
+- **生成方式**：`scripts/score.py`（numpy + scipy，固定种子 `20261029`）合成两轨；BGM / SFX 分轨，无第三方采样。源文件 `public/audio/bgm/apple-score-bgm.wav`、`public/audio/sfx/apple-score-sfx.wav`，授权记录见 `docs/audio-licenses.md`。
+- **卡点**：三段网格分别锚在画面上 —— **446f**（S02 四次点击各落一拍，521f portal 与 1031f 换页同落强拍）、**1915f**（S05 爆发 = drop 的强拍）、**2191f**（S06 工作流 groove 的强拍）；报告卡 2553f 与尾卡 2661f 落在鼓停之后的自由终止式上。S05 入场 1495f 比该处强拍 1496f 早 1f（33ms），那里没有重音对位，不为它改画面。四次点击的绝对时刻 14.867 / 15.367 / 15.867 / 16.367s。
+- **接入**：`src/promo/Soundtrack.tsx` 同时挂 BGM 与 SFX；`ProductPromo` 的 `bgm` prop（默认 true）只关 BGM、保留 SFX，对应 `props-nobgm.json`。
+
+### 20.1 配乐结构
+
+| 时间 | 画面 | 音乐 | SFX |
+|---|---|---|---|
+| 0:00–0:13.5 | S01 品牌开场 | Amaj9 pad 起；2.867s 进 4/4 底鼓 + 8 分镲 → 6.867s 开镲 → 8.867s 16 分与 stab → 10.867s 拍手 backbeat；末尾 riser | — |
+| 0:13.5–0:17.4 | S02 选择社媒 | 满编 groove；四次点击各落一拍，和声 I–vi–IV–V | 4 个拟音 click |
+| 0:17.4 | portal 进产品 | 强拍进 S03 + crash | whoosh + sub drop |
+| 0:20.3 / 0:31.3 | S03 两次点击 | 律动 + 明亮 pluck 主音 8 分 | 2 个 click |
+| 0:34.4 | S03→S04 切页 | 强拍 crash，循环推进 | 页面 whoosh |
+| 0:49.8 | S05 读页 | 底鼓与 16 分 shaker 继续，中频层收窄 | — |
+| 0:49.8–1:02.9 | 计数加速 | 和声停在属和弦 E9，16 分镲加密 + 2.6s riser | 1.6s riser |
+| 1:02.9–1:03.8 | 起爆前 | 属和弦延长，军鼓 16 分滚奏渐强 | — |
+| 1:03.833 | 99+ 爆发 | **drop**：Amaj9 满编 + crash + 高音铃 | impact + sub drop（全片唯一爆点） |
+| 1:07.30 | 灯灭 | 硬切真静默（67.30–67.577s，峰值 0） | 低音 thud |
+| 1:07.62 | 聚光灯亮 | 无鼓，Amaj9 pad 渐入 + 铃音 | sparkle |
+| 1:13.03–1:24.7 | 工作流 | 新网格 groove，比 drop 薄一层；轻 pluck | — |
+| 1:25.1 | 报告卡 | 鼓已停，Dmaj9 落在空位上 | sparkle |
+| 1:27.1 | 收尾铺垫 | E9 + 1.8s riser | whoosh |
+| 1:28.7 | 品牌尾卡 | 终止和弦 A6add9 长条 + 高音铃 | impact + sparkle |
+| 1:31.7 | 结束 | 0.18s 淡出 | 淡出 |
+
+### 20.2 混音与响度
+
+- 分轨电平（`scripts/score.py` 输出，两轨按同一系数 `0.89 / 求和峰值` 缩放）：BGM 峰值 **−7.3 dBFS** / RMS −22.2 dBFS；SFX 峰值 **−4.4 dBFS**（SFX 在 BGM 之上，符合 §8）。
+- 主版：渲染原始 **−19.53 LUFS / TP −1.10 dBTP** → 两遍 `loudnorm`（I=−14、TP 目标 −2、linear）→ 交付 **−13.93 LUFS / TP −1.83 dBTP**（AAC 后复测）。TP 目标设 −2 而不是 −1，是因为 AAC 编码会把真峰值抬回约 0.9 dB；上一版按 −1 目标渲出 **−0.86 dBTP**，已破 §8 的 ≤−1，本轮改口径。
+- 无 BGM 版：渲染原始 **−18.77 LUFS / TP −3.96 dBTP** → 同一套两遍 `loudnorm` → 交付 **−15.20 LUFS / TP −1.77 dBTP**。**不再套用主版的固定增益**：SFX 分轨峰值 −3.96 dBFS，主版需要的 +5.5 dB 会把它推到 +1.5 dBFS（实测解码后 −0.28 dBFS 满幅、已过载）；改走 loudnorm 后由 TP 上限自动把增益压到 +4.8 dB，代价是响度落在 −15.2 而非 −14（该版本只有稀疏拟音、LRA 24，线性归一无法同时满足 −14 与 ≤−1）。
+- 卡点复测（成片音轨 `out/qa/new-film-mix.wav`，同一命令）：实测脉冲 **119.7 BPM / 强度 0.777**、高频/中频 **−13.9 dB**、泵感 70%；底鼓瞬态落在 446 / 461 / 476 / 491 / 521 / 1031 / 1915 / 2191f。
+- 灯灭：分轨在 67.30–67.577s 精确为 0（门控移到压缩/滤波之后）；成片 AAC 解码后该段峰值 **−62 dBFS**。
+- 交付：`out/final/promo-bgm.mp4`、`out/final/promo-nobgm.mp4`（H.264 High / CRF18 / **yuvj420p（full-range 4:2:0）** / AAC ~317kbps / 48kHz / 91.80s）。像素格式与既有单场预览一致，见 D43。
+
+### 20.3 复现
+
+```bash
+python scripts/score.py
+python scripts/bgm-energy.py public/audio/bgm/apple-score-bgm.wav
+python scripts/beat-sync-check.py public/audio/bgm/apple-score-bgm.wav
+npx remotion render src/index.ts ProductPromo out/qa/render-bgm-raw.mp4 --codec=h264 --crf=18 --pixel-format=yuv420p --audio-codec=aac --audio-bitrate=320k --concurrency=4
+LOUD_TP=-2 node scripts/normalize-audio.mjs bgm out/qa/render-bgm-raw.mp4 out/final/promo-bgm.mp4
+npx remotion render src/index.ts ProductPromo out/qa/render-nobgm-raw.mp4 --props=props-nobgm.json --codec=h264 --crf=18 --pixel-format=yuv420p --audio-codec=aac --audio-bitrate=320k --concurrency=4
+LOUD_TP=-2 node scripts/normalize-audio.mjs bgm out/qa/render-nobgm-raw.mp4 out/final/promo-nobgm.mp4
+```
+
+`timeline.ts` 的帧长/接缝变化时，需同步更新 `scripts/score.py` 顶部的 cue 常量与三段网格锚点（446 / 1915 / 2191f）。

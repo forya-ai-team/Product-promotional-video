@@ -1,11 +1,10 @@
 import type { FC } from 'react';
-import { Img, staticFile } from 'remotion';
+import { DmexXMark } from '../brand/DmexWordmark';
 
 const WindowIcon: FC = () => (
-  <Img
-    src={staticFile('textures/S03/win-icon@2x.png')}
-    style={{ position: 'absolute', left: 1, top: 2, width: 17, height: 14 }}
-  />
+  <div style={{ position: 'absolute', left: 1, top: 2.5 }}>
+    <DmexXMark width={17} />
+  </div>
 );
 
 export const TitleBar: FC = () => {
@@ -22,7 +21,7 @@ export const TitleBar: FC = () => {
           color: '#3B3B3B',
         }}
       >
-        Tolink
+        Dmex
       </div>
 
       <div
@@ -67,7 +66,7 @@ export const TitleBar: FC = () => {
           color: '#2E2E2E',
         }}
       >
-        <span>Tolink</span>
+        <span>Dmex</span>
         <span>帮助</span>
         <span>编辑</span>
       </div>

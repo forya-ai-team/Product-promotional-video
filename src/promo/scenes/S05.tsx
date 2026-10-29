@@ -10,7 +10,6 @@ import { TikTokMessages } from '../ui/tolink/TikTokMessages';
 // of that hold.
 const STATIC_HOLD = sec(3);
 const ANIMATION_SPAN = 450;
-export const S05_DURATION = STATIC_HOLD + ANIMATION_SPAN;
 
 const OVERSCAN = 40;
 

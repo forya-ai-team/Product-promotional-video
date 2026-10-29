@@ -6,6 +6,7 @@ import { LAUNCH_BUTTON_CENTER } from '../ui/tolink/MainArea';
 import { Stage } from '../ui/tolink/Stage';
 import { TolinkDesktop } from '../ui/tolink/TolinkDesktop';
 import { tol } from '../ui/tolink/tokens';
+import { S03_LEAD } from '../timeline';
 
 const WINDOW_TOP = tol.layout.stageTop;
 const CARD = { x: 172.5, y: 309.5 };
@@ -31,7 +32,6 @@ const MOVE2_END = 378;
 const MOVE2_CONTROL = { x: 620, y: 150 };
 const PRESS2_START = 390;
 const CLICK2_FRAME = 394;
-export const S03_DURATION = 486;
 
 const FOCUS_START = { x: 530, y: 330 };
 const FOCUS_END = { x: 960, y: 540 };
@@ -237,7 +237,9 @@ const ClickBurst: FC<ClickBurstProps> = ({ frame, center, clickFrame }) => {
 };
 
 export const S03: FC = () => {
-  const frame = useCurrentFrame();
+  // Negative frames during the lead clamp to the shot's frame-0 state, which is
+  // what the portal-wipe lands on.
+  const frame = useCurrentFrame() - S03_LEAD;
   const camera = cameraAt(frame);
   const cursor = cursorAt(frame);
 

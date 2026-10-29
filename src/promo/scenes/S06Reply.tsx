@@ -8,6 +8,7 @@ import { LarkReportCard, REPORT_H, REPORT_W } from '../shots/workflow/LarkReport
 import { CARD_AT, DURATION, LEAD_START, NOTIFY_AT, PANEL, QUICK_NODE, nodeScreen } from '../shots/workflow/plan';
 import { S06Spotlight } from './S06Spotlight';
 import { S06Desktop } from '../ui/tolink/S06Desktop';
+import { S06_SPOTLIGHT_DURATION } from '../timeline';
 
 // Second half of S06: frame 0 here == S06Spotlight's last frame.
 const PAGE_W = 2600;
@@ -361,15 +362,15 @@ const Beams: FC<{ frame: number }> = ({ frame }) => {
 };
 
 // Full S06: spotlight (172f) hands over to the chat → workflow → Lark shot (486f).
+// The reply starts on the spotlight's last frame, which is what its opening
+// state (breathing phase, veil, note) was authored against.
 export const S06ReplyFull: FC = () => (
   <AbsoluteFill>
-    <Sequence durationInFrames={172}>
+    <Sequence durationInFrames={S06_SPOTLIGHT_DURATION}>
       <S06Spotlight />
     </Sequence>
-    <Sequence from={138} durationInFrames={DURATION}>
+    <Sequence from={S06_SPOTLIGHT_DURATION} durationInFrames={DURATION}>
       <S06Reply />
     </Sequence>
   </AbsoluteFill>
 );
-
-export const S06_REPLY_TOTAL = 172 + DURATION;

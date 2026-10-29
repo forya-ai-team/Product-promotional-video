@@ -13,3 +13,7 @@ screenshots/*
 public/refs/*
 !public/refs/README.md
 screenshot/
+
+# project is npm-pinned (package-lock.json); pnpm artifacts are local only
+pnpm-lock.yaml
+pnpm-workspace.yaml

@@ -15,6 +15,46 @@ const X =
 
 const INK = '#0C2456';
 
+const X_GRADIENT = [
+  { offset: '0', color: '#29D3FF' },
+  { offset: '0.42', color: '#1B7BFF' },
+  { offset: '0.62', color: '#2F5BFF' },
+  { offset: '1', color: '#7B3BF5' },
+] as const;
+
+const X_STOPS = X_GRADIENT.map((stop) => (
+  <stop key={stop.offset} offset={stop.offset} stopColor={stop.color} />
+));
+
+export const DmexXMark: FC<{ width: number }> = ({ width }) => {
+  const gradientId = `dmex-xmark-${useId().replace(/[:]/g, '')}`;
+
+  return (
+    <svg
+      width={width}
+      height={(width * 54) / 68}
+      viewBox="284 144 68 54"
+      role="img"
+      aria-label="Dmex"
+      style={{ display: 'block' }}
+    >
+      <defs>
+        <linearGradient
+          id={gradientId}
+          gradientUnits="userSpaceOnUse"
+          x1={284}
+          y1={144}
+          x2={352}
+          y2={198}
+        >
+          {X_STOPS}
+        </linearGradient>
+      </defs>
+      <path d={X} fill={`url(#${gradientId})`} fillRule="evenodd" />
+    </svg>
+  );
+};
+
 export const DmexWordmark: FC<{ width: number }> = ({ width }) => {
   const gradientId = `dmex-x-${useId().replace(/[:]/g, '')}`;
 
@@ -36,10 +76,7 @@ export const DmexWordmark: FC<{ width: number }> = ({ width }) => {
           x2={352}
           y2={198}
         >
-          <stop offset="0" stopColor="#29D3FF" />
-          <stop offset="0.42" stopColor="#1B7BFF" />
-          <stop offset="0.62" stopColor="#2F5BFF" />
-          <stop offset="1" stopColor="#7B3BF5" />
+          {X_STOPS}
         </linearGradient>
       </defs>
       <path d={DME} fill={INK} fillRule="evenodd" />

@@ -2,6 +2,7 @@ import type { FC } from 'react';
 import { AbsoluteFill, Easing, interpolate, useCurrentFrame } from 'remotion';
 import { DmexWordmark } from '../ui/brand/DmexWordmark';
 import { PlatformMark, type PlatformId } from '../ui/brand/PlatformIcons';
+import { S02_DURATION } from '../timeline';
 import { BigCursor } from '../ui/tolink/BigCursor';
 
 // Adaptation of video-shotcraft beat-step-list-theme-cycle: the source card
@@ -9,8 +10,9 @@ import { BigCursor } from '../ui/tolink/BigCursor';
 // its last real platform, so the list stays put and the lens (the selected
 // row's fill + clipped copy of the same row) hops down one row per beat, while
 // the field tint, counter and swatches cross-mix on the exact same clock.
-export const S02_DURATION = 165;
-
+// The beat is 15f (the score's 120 BPM downbeat grid) instead of the card's 18f,
+// so the four picker clicks land on the kick; the glide and ripple shrink with
+// it and every beat keeps genuine still time.
 const W = 1920;
 const H = 1080;
 
@@ -40,6 +42,17 @@ const INK = '#16233C';
 const CHIP_CENTER_X = LIST_X + CHIP_INSET + CHIP / 2;
 const rowTop = (index: number) => LIST_TOP + index * PITCH;
 const rowCenter = (index: number) => rowTop(index) + ROW_H / 2;
+
+const CAM_END = 1.025;
+// Screen rect of the settled TikTok lens (row 3) under the final camera zoom;
+// the portal-wipe grows S03's window out of it.
+export const S02_LENS_RECT = {
+  left: 960 + (LIST_X - 960) * CAM_END,
+  top: 560 + (rowTop(3) - 560) * CAM_END,
+  width: LIST_W * CAM_END,
+  height: ROW_H * CAM_END,
+  radius: ROW_RADIUS * CAM_END,
+};
 
 type PlatformTheme = {
   id: PlatformId;
@@ -103,11 +116,11 @@ const FIELD_STATES = [
   })),
 ];
 
-const BEAT_LEN = 18;
+const BEAT_LEN = 15;
 const FIRST_BEAT = 42;
 const SNAP = 6;
-const GLIDE = 14;
-const RIPPLE_LIFE = 26;
+const GLIDE = 11;
+const RIPPLE_LIFE = 22;
 const CLICKS = PLATFORMS.map((_, index) => FIRST_BEAT + index * BEAT_LEN);
 
 const clamp01 = (value: number) => Math.min(1, Math.max(0, value));
@@ -186,7 +199,7 @@ const cursorAt = (frame: number) => {
 
 const hoverAt = (frame: number, index: number) => {
   const click = CLICKS[index];
-  const rise = Easing.out(Easing.cubic)(clamp01((frame - (click - 14)) / 10));
+  const rise = Easing.out(Easing.cubic)(clamp01((frame - (click - GLIDE)) / (GLIDE - 4)));
   const fall = 1 - clamp01((frame - click) / 5);
   return rise * fall;
 };
@@ -350,7 +363,7 @@ export const S02: FC = () => {
   // those 2–3 frames read as motion (the card's SpeedBlur) instead of a bar.
   const slideBlur = beat >= 2 ? 5 * Math.sin(Math.PI * t) : 0;
 
-  const cam = mix(1, 1.025, ramp(frame, 0, S02_DURATION, Easing.inOut(Easing.sin)));
+  const cam = mix(1, CAM_END, ramp(frame, 0, S02_DURATION, Easing.inOut(Easing.sin)));
   const chromeIn = ramp(frame, 0, 12);
   const headingIn = ramp(frame, 3, 16);
   const swatchIn = ramp(frame, 20, 14, Easing.out(Easing.cubic));

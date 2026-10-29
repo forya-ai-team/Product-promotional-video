@@ -4,8 +4,6 @@ import { AbsoluteFill, Easing, useCurrentFrame } from 'remotion';
 import { PLATFORM_META, PlatformMark, type PlatformId } from '../ui/brand/PlatformIcons';
 import { DmexWordmark } from '../ui/brand/DmexWordmark';
 
-export const S01_DURATION = 420;
-
 const W = 1920;
 const H = 1080;
 const CENTER = { x: 960, y: 500 };

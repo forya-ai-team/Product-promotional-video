@@ -1,23 +1,43 @@
 import type { FC } from 'react';
 import { Composition } from 'remotion';
 import { ProductPromo } from './promo/Main';
-import { S01, S01_DURATION } from './promo/scenes/S01';
-import { S02, S02_DURATION } from './promo/scenes/S02';
-import { S03, S03_DURATION } from './promo/scenes/S03';
+import { S01 } from './promo/scenes/S01';
+import { S02 } from './promo/scenes/S02';
+import { S03 } from './promo/scenes/S03';
 import { S03Static } from './promo/scenes/S03Static';
-import { S04, S04_DURATION } from './promo/scenes/S04';
+import { S04 } from './promo/scenes/S04';
 import { S04Static } from './promo/scenes/S04Static';
-import { S05, S05_DURATION } from './promo/scenes/S05';
+import { S05 } from './promo/scenes/S05';
 import { S05Static } from './promo/scenes/S05Static';
-import { S06Spotlight, S06_SPOTLIGHT_DURATION } from './promo/scenes/S06Spotlight';
-import { S06ReplyFull, S06_REPLY_TOTAL } from './promo/scenes/S06Reply';
+import { S06ReplyFull } from './promo/scenes/S06Reply';
+import { S06Spotlight } from './promo/scenes/S06Spotlight';
 import { S06Static } from './promo/scenes/S06Static';
-import { FPS, TOTAL_FRAMES } from './promo/timeline';
-import { ThreeProbe } from './promo/three/ThreeProbe';
+import { S07EndCard } from './promo/scenes/S07EndCard';
+import {
+  FPS,
+  S01_DURATION,
+  S02_DURATION,
+  S03_DURATION,
+  S04_DURATION,
+  S05_DURATION,
+  S06_DURATION,
+  S06_SPOTLIGHT_DURATION,
+  S07_DURATION,
+  TOTAL_FRAMES,
+} from './promo/timeline';
 
 export const RemotionRoot: FC = () => {
   return (
     <>
+      <Composition
+        id="ProductPromo"
+        component={ProductPromo}
+        durationInFrames={TOTAL_FRAMES}
+        fps={FPS}
+        width={1920}
+        height={1080}
+        defaultProps={{ bgm: true }}
+      />
       <Composition
         id="S01"
         component={S01}
@@ -101,7 +121,15 @@ export const RemotionRoot: FC = () => {
       <Composition
         id="S06Reply"
         component={S06ReplyFull}
-        durationInFrames={S06_REPLY_TOTAL}
+        durationInFrames={S06_DURATION}
+        fps={FPS}
+        width={1920}
+        height={1080}
+      />
+      <Composition
+        id="S07EndCard"
+        component={S07EndCard}
+        durationInFrames={S07_DURATION}
         fps={FPS}
         width={1920}
         height={1080}

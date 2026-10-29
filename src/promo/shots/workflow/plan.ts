@@ -1,7 +1,8 @@
+import { S06_REPLY_DURATION } from '../../timeline';
 import { DEMO_EDGES, EDGES, NODES, type WorkflowEdge } from './workflowData';
 
 export const PANEL = { x: 1046, y: 122, w: 838, h: 884, r: 18 } as const;
-export const DURATION = 486;
+export const DURATION = S06_REPLY_DURATION;
 
 // The reference demo spends 20s on one pass; the promo keeps the front chain
 // and the six-way split, then leaves the demo route for the report branch
