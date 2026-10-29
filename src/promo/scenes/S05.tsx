@@ -5,10 +5,10 @@ import { ConnectionDesktop, type CardVisualState } from '../ui/tolink/Connection
 import { Stage } from '../ui/tolink/Stage';
 import { TikTokMessages } from '../ui/tolink/TikTokMessages';
 
-// The untouched messages page holds for 5s so the viewer can read it before the
+// The untouched messages page holds for 3s so the viewer can read it before the
 // camera starts pushing; every animation constant below is relative to the end
 // of that hold.
-const STATIC_HOLD = sec(5);
+const STATIC_HOLD = sec(3);
 const ANIMATION_SPAN = 450;
 export const S05_DURATION = STATIC_HOLD + ANIMATION_SPAN;
 
@@ -32,14 +32,16 @@ const FOCUS_PUSH = { x: 660, y: 310 };
 const FOCUS_CREEP = { x: 660, y: 318 };
 
 const COUNT_START = 24;
-const COUNT_END = ANIMATION_SPAN;
-const REQUESTS_FROM = 250;
-const REQUESTS_TO = 250000;
+// The last rendered shot frame is ANIMATION_SPAN - 1; ending the ramp there is
+// what puts REQUESTS_TO on screen instead of one increment short of it.
+const COUNT_END = ANIMATION_SPAN - 1;
+const REQUESTS_FROM = 1;
+const REQUESTS_TO = 999;
 const UNREAD_RATIO = 203 / 250;
-const RATE_FROM = 4;
+const RATE_FROM = 0.2;
 const COUNT_SPAN = COUNT_END - COUNT_START;
-// The rate climbs from near-still to ~2,330 requests per frame; integrating the
-// cubic rate lands the final value on REQUESTS_TO.
+// The rate climbs from one increment every five frames to ~8.8 per frame;
+// integrating the cubic rate lands the final value on REQUESTS_TO.
 const RATE_TO = (4 * (REQUESTS_TO - REQUESTS_FROM)) / COUNT_SPAN - 3 * RATE_FROM;
 
 const pushEase = Easing.inOut(Easing.sin);
@@ -103,6 +105,13 @@ const requestsAt = (frame: number) => {
   );
 };
 
+const rateAt = (frame: number) => requestsAt(frame) - requestsAt(frame - 1);
+
+// The buzz is meant to peak on the blast, not at the end of the count: after
+// the burst the slow motion owns the motion, so anything the counter gains
+// beyond this point is already damped away.
+const SHAKE_RATE_REF = rateAt(BURST_START);
+
 const cameraAt = (frame: number) => {
   const push = pushEase(clamp01((frame - PUSH_START) / (PUSH_END - PUSH_START)));
   const creep = creepEase(clamp01((frame - PUSH_END) / (COUNT_END - PUSH_END)));
@@ -120,8 +129,7 @@ const cameraAt = (frame: number) => {
 };
 
 const shakeAt = (frame: number) => {
-  const rate = requestsAt(frame) - requestsAt(frame - 1);
-  const intensity = Math.pow(clamp01(rate / 900), 0.75);
+  const intensity = Math.pow(clamp01(rateAt(frame) / SHAKE_RATE_REF), 0.75);
   // Counting starts while the camera is still pushing, so the frame already
   // carries a faint buzz before the growth is fast enough to drive it.
   const gate = clamp01((frame - COUNT_START) / 18);

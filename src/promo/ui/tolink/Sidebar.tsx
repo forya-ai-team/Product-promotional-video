@@ -16,7 +16,7 @@ export type CardFeedback = {
   press: number;
 };
 
-const SidebarScrollbar: FC = () => (
+const SidebarScrollbar: FC<{ thumbHeight: number }> = ({ thumbHeight }) => (
   <div style={{ position: 'absolute', left: 259, top: 164, width: 10, bottom: 0 }}>
     <div
       style={{
@@ -35,7 +35,7 @@ const SidebarScrollbar: FC = () => (
         left: 0.5,
         top: 21,
         width: 9,
-        height: 747,
+        height: thumbHeight,
         borderRadius: 4.5,
         background: tol.color.scrollbar,
       }}
@@ -48,6 +48,7 @@ type SidebarProps = {
   cardLeft?: number;
   cardWidth?: number;
   showScrollbar?: boolean;
+  scrollbarThumbHeight?: number;
   children?: ReactNode;
 };
 
@@ -56,6 +57,7 @@ export const Sidebar: FC<SidebarProps> = ({
   cardLeft = 73.5,
   cardWidth = 198,
   showScrollbar = false,
+  scrollbarThumbHeight = 747,
   children,
 }) => {
   const glow = cardFeedback?.glow ?? 0;
@@ -185,7 +187,7 @@ export const Sidebar: FC<SidebarProps> = ({
       </div>
 
       {children}
-      {showScrollbar ? <SidebarScrollbar /> : null}
+      {showScrollbar ? <SidebarScrollbar thumbHeight={scrollbarThumbHeight} /> : null}
     </div>
   );
 };

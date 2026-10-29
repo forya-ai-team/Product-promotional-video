@@ -30,11 +30,11 @@ export const SCENES: SceneSpec[] = [
   },
   {
     id: 'S02',
-    title: '问题与承诺',
-    durationInFrames: sec(22),
+    title: '选择社媒 / 主题色节拍',
+    durationInFrames: sec(5.5),
     transitionAfter: { kind: 'cut', durationInFrames: 0 },
-    cards: ['card-stack'],
-    acceptanceFrames: [sec(4), sec(12), sec(21)],
+    cards: ['beat-step-list-theme-cycle'],
+    acceptanceFrames: [sec(0.6), sec(1), sec(1.6), sec(2.2), sec(2.8), sec(3.4), sec(5)],
   },
   {
     id: 'S03',
@@ -56,10 +56,10 @@ export const SCENES: SceneSpec[] = [
   {
     id: 'S05',
     title: '核心功能 C',
-    durationInFrames: sec(20),
+    durationInFrames: sec(18),
     transitionAfter: { kind: 'portal-wipe', durationInFrames: 48 },
     cards: ['row-embed'],
-    acceptanceFrames: [sec(2), sec(9), sec(13), sec(16), sec(18)],
+    acceptanceFrames: [sec(2), sec(7), sec(11), sec(14), sec(17)],
   },
   {
     id: 'S06',
@@ -72,18 +72,18 @@ export const SCENES: SceneSpec[] = [
   {
     id: 'S07',
     title: '证据 / 指标',
-    durationInFrames: sec(23),
+    durationInFrames: sec(30),
     transitionAfter: { kind: 'cut', durationInFrames: 0 },
     cards: ['chart-live-moves'],
     styles: ['axis-rescale-shock'],
-    acceptanceFrames: [sec(4), sec(11), sec(22)],
+    acceptanceFrames: [sec(4), sec(15), sec(29)],
   },
   {
     id: 'S08',
     title: '收尾 / CTA',
-    durationInFrames: sec(19),
+    durationInFrames: sec(25.5),
     cards: ['outro-group-photo-launch'],
-    acceptanceFrames: [sec(3), sec(10), sec(18)],
+    acceptanceFrames: [sec(3), sec(12), sec(24)],
   },
 ];
 

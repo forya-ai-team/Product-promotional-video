@@ -172,7 +172,7 @@ const MessageRequestsItem: FC<{ requests: number }> = ({ requests }) => (
         justifyContent: 'center',
       }}
     >
-      99+
+      {requests > 99 ? '99+' : requests}
     </div>
   </div>
 );
