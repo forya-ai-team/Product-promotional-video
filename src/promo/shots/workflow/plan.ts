@@ -1,12 +1,12 @@
 import { DEMO_EDGES, EDGES, NODES, type WorkflowEdge } from './workflowData';
 
 export const PANEL = { x: 1046, y: 122, w: 838, h: 884, r: 18 } as const;
-export const DURATION = 480;
+export const DURATION = 486;
 
 // The reference demo spends 20s on one pass; the promo keeps the front chain
 // and the six-way split, then leaves the demo route for the report branch
 // (Merge1 -> 格式化报告 -> 分析卡片发送) that feeds the Lark bot.
-export const LEAD_START = 192;
+export const LEAD_START = 206;
 export const FAN_A = LEAD_START + 55;
 export const FAN_B = FAN_A + 60;
 export const LEAD_END = FAN_B + 38;
@@ -62,6 +62,16 @@ export const REPORT_SCHEDULE: ScheduledEdge[] = [
 ];
 
 export const ALL_SCHEDULE = [...LEAD_SCHEDULE, ...REPORT_SCHEDULE];
+
+// Every ordinary message sends one short pass through the front chain
+// (Webhook -> If8) before the answer travels back to the chat. Only the UID
+// message at LEAD_START crosses the whole graph.
+export const QUICK_AT = [34, 90, 146];
+const QUICK_EDGES = LEAD_SCHEDULE.slice(0, 1).map((s) => s.e);
+export const QUICK_NODE = QUICK_EDGES[QUICK_EDGES.length - 1].t;
+export const QUICK_SCHEDULE: ScheduledEdge[] = QUICK_AT.flatMap((at) =>
+  QUICK_EDGES.map((e, i) => scheduled(e, at + i * 6, at + i * 6 + 8, 'lead')),
+);
 
 export const pointOn = (p: WorkflowEdge['p'], t: number) => {
   const mt = 1 - t;
@@ -124,15 +134,18 @@ export const cameraAt = (frame: number) => {
 
 export type FrameState = {
   flow: Map<string, { s: ScheduledEdge; progress: number }>;
+  quickFlow: Map<string, { s: ScheduledEdge; progress: number }>;
   afterglow: Map<string, number>;
   visited: Set<string>;
   activeNodes: Set<string>;
   visitedNodes: Set<string>;
   webhookPulse: number;
+  quickRunning: boolean;
 };
 
 export const stateAt = (frame: number): FrameState => {
   const flow = new Map<string, { s: ScheduledEdge; progress: number }>();
+  const quickFlow = new Map<string, { s: ScheduledEdge; progress: number }>();
   const afterglow = new Map<string, number>();
   const visited = new Set<string>();
   const activeNodes = new Set<string>();
@@ -152,9 +165,20 @@ export const stateAt = (frame: number): FrameState => {
       afterglow.set(k, 1 - (frame - s.b) / 10);
     }
   }
-  const sinceStart = frame - LEAD_START;
-  const webhookPulse = sinceStart >= 0 && sinceStart < 18 ? Math.sin((sinceStart / 18) * Math.PI) : 0;
-  return { flow, afterglow, visited, activeNodes, visitedNodes, webhookPulse };
+  let quickRunning = false;
+  for (const s of QUICK_SCHEDULE) {
+    if (frame < s.a || frame >= s.b) continue;
+    quickRunning = true;
+    quickFlow.set(edgeKey(s.e.s, s.e.t, s.e.kind, s.e.out), { s, progress: (frame - s.a) / (s.b - s.a) });
+    activeNodes.add(s.e.s);
+    activeNodes.add(s.e.t);
+  }
+  const pulseOf = (at: number, len: number) => {
+    const t = (frame - at) / len;
+    return t >= 0 && t < 1 ? Math.sin(t * Math.PI) : 0;
+  };
+  const webhookPulse = Math.max(pulseOf(LEAD_START, 18), ...QUICK_AT.map((at) => pulseOf(at + 2, 16)));
+  return { flow, quickFlow, afterglow, visited, activeNodes, visitedNodes, webhookPulse, quickRunning };
 };
 
 export const worldToPanel = (x: number, y: number, cam: { cx: number; cy: number; zoom: number }) => ({
@@ -168,4 +192,13 @@ export const nodeTop = (name: string) => {
   const n = NODES.find((v) => v.name === name);
   if (!n) throw new Error(`missing node ${name}`);
   return { x: n.x + n.w / 2, y: n.y - 10 };
+};
+
+// Where a node sits on the 1920×1080 canvas at a given frame (panel is plain
+// positioned, the camera transform lives inside it).
+export const nodeScreen = (name: string, frame: number) => {
+  const n = NODES.find((v) => v.name === name);
+  if (!n) throw new Error(`missing node ${name}`);
+  const p = worldToPanel(n.x + n.w / 2, n.y + n.h / 2, cameraAt(frame));
+  return { x: PANEL.x + p.x, y: PANEL.y + p.y };
 };

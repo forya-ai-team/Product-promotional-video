@@ -599,49 +599,51 @@ node scripts/diff-refs-s06.mjs out/qa/S06-static-f0.png
 
 ## 18. S06 动效：引导下载 → 客户回 UID → 工作流识别 → Lark 机器人推送分析报告（2026-10-29 改写）
 
-承接 §17：composition `S06Reply`（`S06ReplyFull`）= `S06Spotlight` 172f + 本场 480f = **652f / 21.73s**，尚未接入 `timeline.ts`（S06 仍为 30s 占位）。拓扑仍取自 `screenshot/工作流视频展示版.html`（n8n 风格单遍演示，161 节点 / 210 连线，分流 `Switch2`；本地只读），但终点从原版的“连续自动应答重放”改为图里真实存在的报告支路 `Merge1 → 格式化报告 → 分析卡片发送`：聊天先把客户引导到 App 注册，客户回 UID，工作流识别 UID 后沿报告支路把分析卡推到 Lark 群（D36）。
+承接 §17：composition `S06Reply`（`S06ReplyFull`）= `S06Spotlight` 172f + 本场 486f = **658f / 21.93s**，尚未接入 `timeline.ts`（S06 仍为 30s 占位）。拓扑仍取自 `screenshot/工作流视频展示版.html`（n8n 风格单遍演示，161 节点 / 210 连线，分流 `Switch2`；本地只读），但终点从原版的“连续自动应答重放”改为图里真实存在的报告支路 `Merge1 → 格式化报告 → 分析卡片发送`：聊天先把客户引导到 App 注册，客户回 UID，工作流识别 UID 后沿报告支路把分析卡推到 Lark 群（D36）。每一轮问答都由光线把“消息 → 工作流 → 回复”串成一次可见的因果，UID 那束换成金色并触发全图执行。
 
 ### 18.1 叙事与拓扑
 
 | 项 | 做法 |
 |---|---|
-| 对话 | 7 条英文 mock（沿用参考应用语种），间隔 24–26f、统一 1 行：20f 客户 “hey! how do I get started?” → 44f 机器人 “Welcome to Oumi 👋 Want to grow your TikTok account?” → 68f “yes! I need more real followers” → 94f “Download the Oumi app and sign up first — it's free.” → 120f “ok, just downloaded it” → 144f “Nice. Open your profile page and send me your UID.” → 170f 客户回 UID “2194615”（与报告卡 `Oumi ID` 同值） |
-| 触发 | 184–194f 金色火花从 UID 气泡右缘 (300,868) 起，控制点 (780,470)，落到面板中心 (1465,564)——即 `分析卡片发送` 在收尾机位下的投影位置；弧线压在气泡带上方穿过，只在起手处擦过机器人气泡底边 |
-| 主链 | 192f Webhook 触发 → 247f 到 `Switch2` → 247–307f 六路分支 → 307f 起三路错峰 2.5f 汇入 `Merge1` → 321–333f `格式化报告` → 333–345f `分析卡片发送` |
+| 对话 | 7 条英文 mock（沿用参考应用语种），4 问 3 答、提问间隔 56f（1.87s，真人打字节奏），统一 1 行：16f 客户 “hey! how do I get started?” → 54f 机器人 “Welcome to Oumi 👋 Want to grow your TikTok account?” → 72f “yes! I need more real followers” → 110f “Download the Oumi app and sign up first — it's free.” → 128f “ok, just downloaded it” → 166f “Nice. Open your profile page and send me your UID.” → 184f 客户回 UID “2194615”（与报告卡 `Oumi ID` 同值） |
+| 一问一答的因果 | 每条提问先发一束青色光线（`CYAN` #8FD8FF）：气泡右缘 → Webhook 节点（`nodeScreen('Webhook', at+18)`），10f 飞完；落地同一帧 `QUICK_SCHEDULE` 让 Webhook→If8 走一次 8f 快跑（只走 1 条边、只写 `quickFlow` 不写 `visited`，保留金色全图跑的冷启动对照）；答案再从 If8 飞回聊天卡输入条上方 (990,866)，2f 后回复气泡入场。三次往返同构（发信 16/72/128f、回信 44/100/156f），观众在第一次就能学会“发消息 → 右边动 → 回复回来” |
+| UID 破格 | 同一路径自 194f 换成金色（`GOLD` #E4C58A，头部 9px vs 青 7px、飞 12f），从 UID 气泡右缘 (337,868) 射向 Webhook，206f（`LEAD_START`）落地即触发全图执行 |
+| 主链 | 206f Webhook 触发 → 261f（`FAN_A`）到 `Switch2` → 261–321f（`FAN_B`）六路分支 → 321f 起三路错峰 2.5f 汇入 `Merge1` → 335–347f `格式化报告` → 347–359f（`LEAD_END`）`分析卡片发送` |
 | 报告支路 | 只取三条汇入边 + `Merge1→格式化报告` + `格式化报告→分析卡片发送`；packet 改为金色（`GOLD`），与主链橙色区分 |
-| 收尾 | 345f 两圈金环从节点扩散（错开 5f，18f 内 r 16→112）；HUD chip 由 `运行中` 变 `已推送 Lark 通知`；348f 面板压暗蒙版 16f 起，报告卡在面板中心 0.05→1 放大 30f（`bezier(0.45,0,0.2,1)`，前 4f 透明度 0→1），378–479f 静止 hold 102f（3.4s）供阅读 |
+| 收尾 | 359f 两圈金环从节点扩散（错开 5f，18f 内 r 16→112）；HUD chip 由 `运行中` 变 `已推送 Lark 通知`；362f（`CARD_AT`）面板压暗蒙版 16f 起，报告卡在面板中心 0.05→1 放大 30f（`bezier(0.45,0,0.2,1)`，前 4f 透明度 0→1），392–485f 静止 hold 93f（3.1s）供阅读 |
 
-### 18.2 版面与帧事件（reply 段 480f @30fps）
+### 18.2. 版面与帧事件（reply 段 486f @30fps）
 
 | 项 | 值 |
 |---|---|
 | 面板 | page (1046,122) 838×884，r18，`translateZ(2px)`（同卡层深度，避开页空间压暗蒙版） |
 | 入场 | 6–20f 从画右 x=1920 滑入；14–32f 内容淡入（`EASE.out`） |
-| 相机 | 跟随（9 帧对称均值）→ 247–307f 混到分流中心 (7400,1870)（权重 0.92）→ 307f 后 26f 混到报告支路中心 (8418,1712)；zoom 0.68→0.5→0.46→0.50→0.70，其中 46–192f 从 0.66 缓推到 0.5，聊天段全程有慢推 |
-| HUD | 右上状态 chip：`待机` → 192f `运行中` → 345f `已推送 Lark 通知`（金）；右下 190×72 minimap（金框 = 当前视口）；左下 `161 节点 · 210 连线` |
-| 注记 | 30px 面板固定（左上 22,78）：`收到 UID 消息` 194–224、`识别到 UID` 230–260、`6 路分支并行` 266–307；`推送 Lark 机器人` 312–342 挂在 `分析卡片发送` 节点上方（`dy -70`），随相机移动 |
-| 聊天 | 7 条气泡各 9f 入场，间隔 24–26f；线程在气泡出现前 8f 开始上移（12f，逐条抬 44–50px），最新一条落定在输入条上方 56px，不会从输入框后面滑出；输入条提示 22–34f 淡出 |
+| 相机 | 跟随（9 帧对称均值）→ 261–321f 混到分流中心 (7400,1870)（权重 0.92）→ 321f 后 26f 混到报告支路中心 (8418,1712)；zoom 0.68→0.5→0.46→0.50→0.70，其中 0–206f 从 0.68 缓推到 0.5，聊天段全程有慢推 |
+| HUD | 右上状态 chip：`待机` → 快跑/全图跑的运行窗口内 `运行中`（`quickRunning` 或 `LEAD_START…LEAD_END`）→ 359f `已推送 Lark 通知`（金）；右下 190×72 minimap（金框 = 当前视口）；左下 `161 节点 · 210 连线` |
+| 注记 | 30px 面板固定（左上 22,78）：`收到 UID 消息` 208–238、`识别到 UID` 244–274、`6 路分支并行` 280–321；`推送 Lark 机器人` 326–356 挂在 `分析卡片发送` 节点上方（`dy -70`），随相机移动 |
+| 光线 | 页面空间 SVG（`translateZ(5px)`）上的二次贝塞尔：已走过的整段留 0.2 透明度细线，落地后 8f 内淡出；头部 3× 光晕 + 白芯；两端各有一枚光斑（起点 6f 起亮、落地后 7f 收掉），保证“哪条消息发出、落到哪个节点”一眼对得上。弧线控制点 (780,470) 只擦过气泡带上方 |
+| 聊天 | 7 条气泡各 9f 入场，提问 56f、回复在光线到达后 2f；线程在气泡出现前 8f 开始上移（12f，逐条抬 44–50px），最新一条落定在输入条上方 56px，不会从输入框后面滑出；输入条提示 22–34f 淡出 |
 | 报告卡 | 屏幕空间 838×748（不在 `PageCam` 内，保持正对镜头可读），圆心 = 面板中心；标题带 `#FCEDEA` + `#C0271E`，正文 30/40 行高；不缩放后静止，避免 `transform: scale` 把文字拉糊 |
-| 收尾 | 378f 落定后不再运动，靠颗粒与金色环余晖保持呼吸 |
+| 收尾 | 392f 落定后不再运动，靠颗粒与金色环余晖保持呼吸 |
 
 - 接缝：reply 段首帧与 `S06Spotlight` 末帧逐像素比对，171→172 平均差 0.437/255、172→173 0.214/255，无 >30 的成片级差；压暗蒙版、卡形软洞、钨丝光柱、尘埃、颗粒均按聚光场末态复刻（光柱多边形由末帧实测值反推：源点 (919,-720)、池心 (499,540)、半径 279）。
-- 情绪账：全片无整画面冲击（0/3）；火花是元素级；六路分支的“墙”是唯一一次群体运动；报告卡是元素级“放大落定”，不做整画面脉冲。
-- 手法账：本场独家使用“全图执行 + 报告支路 + 群通知落地”语法；§17 的 spotlight/轮廓光不再出现。
+- 情绪账：全片无整画面冲击（0/3）；光线与报告卡都是元素级；六路分支的“墙”是唯一一次群体运动。
+- 手法账：本场独家使用“消息↔工作流的光线往返 + 全图执行 + 群通知落地”语法；§17 的 spotlight/轮廓光不再出现。青色往返在三次问答里重复是为了建立语法，金色全图跑是唯一变奏。
 
 ### 18.3 组件
 
 | 文件 | 职责 |
 |---|---|
-| `src/promo/shots/workflow/plan.ts` | 时间表（LEAD_START / FAN_A / FAN_B / LEAD_END / NOTIFY_AT / CARD_AT）、贝塞尔求点、相机表、每帧状态（flow / afterglow / visited）、callout 锚点 |
-| `.../WorkflowPanel.tsx` | 面板、点阵底、210 条连线、packet（主链橙 / 报告金）、节点、标签、callout、金环、minimap、chip |
+| `src/promo/shots/workflow/plan.ts` | 时间表（LEAD_START / FAN_A / FAN_B / LEAD_END / NOTIFY_AT / CARD_AT / QUICK_AT）、贝塞尔求点、相机表、每帧状态（flow / quickFlow / afterglow / visited）、`nodeScreen` 世界→画布换算、callout 锚点 |
+| `.../WorkflowPanel.tsx` | 面板、点阵底、210 条连线、packet（主链橙 / 报告金 / 快跑青）、节点、标签、callout、金环、minimap、chip |
 | `.../ReplyChatThread.tsx` | 7 条 mock 气泡 + 预滚动 + footer 淡出，复用 `ChatPanel` 的 `threadShift/footerOpacity/extra` |
 | `.../LarkReportCard.tsx` | 838×748 群通知卡：标题带 + 12 行字段 + 客户热度 + 画像摘要，逐行转写用户截图 |
-| `src/promo/scenes/S06Reply.tsx` | 承接舞台（同款灯光/注记/蒙版）+ 面板 + 聊天卡 + 火花 + 压暗蒙版 + 报告卡 |
+| `src/promo/scenes/S06Reply.tsx` | 承接舞台（同款灯光/注记/蒙版）+ 面板 + 聊天卡 + 光线往返（`beamSpecs`/`Beams`）+ 压暗蒙版 + 报告卡 |
 | `scripts/gen-workflow-data.mjs` | 从原 HTML 生成拓扑模块 |
 
 ### 18.4 验收
 
-- 关键帧：`out/qa/S06M-f330.png`（6 条对话）、`S06M-f352.png`（7 条落定 + UID 气泡）、`S06M-f360.png`（火花擦过气泡带）、`S06M-f365.png`（火花入面板 + Webhook 点亮）、`S06M-f480.png`（六路分支）、`S06M-f530.png`（报告卡展开中）、`S06M-f651.png`（末帧 hold）。`S06L/2/3` 与 `S06L4/5/6-f*` 是 3 条对话的过程稿，`S06M-f362.png` 为调整弧线前的对照。
-- 预览：`out/qa/S06Reply-preview.mp4`（652f / 21.73s / 1920×1080 / 30fps，ffprobe 复核）；九帧接触表 `out/qa/S06Reply-sheet.png`（172 / 300 / 352 / 365 / 420 / 480 / 530 / 600 / 651）。
+- 关键帧：`out/qa/S06R-f202.png`（青线自 “hey!” 气泡飞出，起手光斑在气泡右缘）、`S06R-f210.png`（青色 packet 在 Webhook→If8 上，chip `运行中`）、`S06R-f222.png`（回信光线自 If8 飞回输入条）、`S06Q-f227.png`（回复气泡紧接光线落点入场）、`S06R-f372.png`（金色光线自 UID 气泡起飞）、`S06R-f379.png`（金色 packet 落地开跑，全图拉开）、`S06Q-f657.png`（末帧 hold：报告卡 + 7 条对话）。`S06L*`、`S06M-*` 是 3 条 / 7 条对话、无往返光线的过程稿，仅作对照。
+- 预览：`out/qa/S06Reply-preview.mp4`（658f / 21.93s / 1920×1080 / 30fps；ffprobe `nb_read_frames=658`）；九帧接触表 `out/qa/S06Reply-sheet.png`（188 / 210 / 227 / 320 / 372 / 395 / 500 / 545 / 657），由 `node scripts/contact-sheet.mjs out/qa/S06Reply-preview.mp4 out/qa/S06Reply-sheet.png 188,210,227,320,372,395,500,545,657 3` 从成片抽帧生成。
 - 报告卡无独立参考分辨率，不做像素 diff；内容按用户 2026-10-29 截图逐行转写，隐私处理：昵称截掉尾部、不出现头像与链接、`来源账号` 备注用 23px 灰字、画像摘要改写为中文；未使用 Lark logo（纯文字提及），符合 §11 第三方 logo 规则。
 - 待确认：报告字段是否需要与产品实际字段名对齐；S06 的最终时长与在 `timeline.ts` 中的槽位；SFX（触发 whoosh、分支 riser、推送 sparkle）未接。

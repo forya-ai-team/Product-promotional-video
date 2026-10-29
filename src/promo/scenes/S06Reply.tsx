@@ -5,7 +5,7 @@ import { Dust, EASE, Grain, alpha, ramp } from '../shots/spotlightHeroCard/polis
 import { ReplyChatThread } from '../shots/workflow/ReplyChatThread';
 import { WorkflowPanel } from '../shots/workflow/WorkflowPanel';
 import { LarkReportCard, REPORT_H, REPORT_W } from '../shots/workflow/LarkReportCard';
-import { CARD_AT, DURATION, LEAD_START, NOTIFY_AT, PANEL } from '../shots/workflow/plan';
+import { CARD_AT, DURATION, LEAD_START, NOTIFY_AT, PANEL, QUICK_NODE, nodeScreen } from '../shots/workflow/plan';
 import { S06Spotlight } from './S06Spotlight';
 import { S06Desktop } from '../ui/tolink/S06Desktop';
 
@@ -17,6 +17,7 @@ const CARD_H = 884;
 const CARD_RADIUS = 16;
 const CARD = { x: 140, y: 122 };
 const GOLD = '#E4C58A';
+const CYAN = '#8FD8FF';
 
 const FINAL: CamKey2D = { frame: 0, cx: 960, cy: 540, zoom: 1.0, rotX: 2, rotY: -6, rotZ: -1, persp: 1200 };
 const CAM: CamKey2D[] = [FINAL, { ...FINAL, frame: DURATION }];
@@ -145,7 +146,7 @@ export const S06Reply: FC = () => {
             />
           ) : null}
 
-          <Spark frame={f} />
+          <Beams frame={f} />
 
           {noteFade > 0.01 ? (
             <div style={{ transformStyle: 'preserve-3d', pointerEvents: 'none' }}>
@@ -263,45 +264,109 @@ export const S06Reply: FC = () => {
   );
 };
 
-const sparkPoint = (t: number) => {
-  // Leaves the UID bubble's right edge and arcs over the chat into the panel.
-  const a = { x: 300, y: 868 };
-  const c = { x: 780, y: 470 };
-  const b = { x: 1465, y: 564 };
+// One ordinary exchange: the message lights a beam to the workflow, and the
+// answer comes back on its own beam just before the reply bubble lands.
+// `from` is the incoming bubble's right edge, measured off the still.
+const EXCHANGES = [
+  { at: 16, from: 453, reply: 54 },
+  { at: 72, from: 482, reply: 110 },
+  { at: 128, from: 428, reply: 166 },
+];
+
+type Beam = { a: { x: number; y: number }; c: { x: number; y: number }; b: { x: number; y: number }; start: number; dur: number; tone: string; head: number };
+
+const ANSWER = { x: 990, y: 866 };
+
+// The outbound beam always lands on the Webhook node as the camera has it at
+// that frame; the UID's gold beam follows the same route.
+const beamSpecs = (): Beam[] => {
+  const list: Beam[] = [];
+  for (const e of EXCHANGES) {
+    list.push({ a: { x: e.from, y: 868 }, c: { x: 780, y: 470 }, b: nodeScreen('Webhook', e.at + 18), start: e.at + 8, dur: 10, tone: CYAN, head: 7 });
+    list.push({ a: nodeScreen(QUICK_NODE, e.reply - 10), c: { x: 1450, y: 640 }, b: ANSWER, start: e.reply - 10, dur: 10, tone: CYAN, head: 6.6 });
+  }
+  list.push({ a: { x: 337, y: 868 }, c: { x: 780, y: 470 }, b: nodeScreen('Webhook', LEAD_START), start: LEAD_START - 12, dur: 12, tone: GOLD, head: 9 });
+  return list;
+};
+
+const qbez = (s: Beam, t: number) => {
   const mt = 1 - t;
   return {
-    x: mt * mt * a.x + 2 * mt * t * c.x + t * t * b.x,
-    y: mt * mt * a.y + 2 * mt * t * c.y + t * t * b.y,
+    x: mt * mt * s.a.x + 2 * mt * t * s.c.x + t * t * s.b.x,
+    y: mt * mt * s.a.y + 2 * mt * t * s.c.y + t * t * s.b.y,
   };
 };
 
-const Spark: FC<{ frame: number }> = ({ frame }) => {
-  const t = ramp(frame, LEAD_START - 8, 10, EASE.linear);
-  if (t <= 0 || t >= 1) return null;
-  const p = sparkPoint(t);
-  const tail = sparkPoint(Math.max(0, t - 0.12));
-  const op = Math.min(1, Math.sin(t * Math.PI) * 2.4);
+const trail = (s: Beam, t: number) => {
+  const pts: string[] = [];
+  for (let i = 0; i <= 20; i++) {
+    const p = qbez(s, (t * i) / 20);
+    pts.push(`${p.x.toFixed(1)},${p.y.toFixed(1)}`);
+  }
+  return pts.join(' ');
+};
+
+const Beams: FC<{ frame: number }> = ({ frame }) => {
+  const items = beamSpecs()
+    .map((s) => {
+      const t = ramp(frame, s.start, s.dur, EASE.linear);
+      const end = s.start + s.dur;
+      return { s, t, src: ramp(frame, s.start - 6, 8, EASE.out) * (1 - ramp(frame, end + 1, 7, EASE.linear)), since: frame - (s.start - 6), fade: 1 - Math.max(0, frame - end) / 8 };
+    })
+    .filter(({ since, fade }) => since >= 0 && fade > 0.005);
+  if (items.length === 0) return null;
   return (
     <svg
       width={PAGE_W}
       height={PAGE_H}
       style={{ position: 'absolute', left: 0, top: 0, pointerEvents: 'none', transform: 'translateZ(5px)' }}
     >
-      <line x1={tail.x} y1={tail.y} x2={p.x} y2={p.y} stroke={alpha(GOLD, 0.55 * op)} strokeWidth={2.5} strokeLinecap="round" />
-      <circle cx={p.x} cy={p.y} r={16} fill={alpha(GOLD, 0.18 * op)} />
-      <circle cx={p.x} cy={p.y} r={6.5} fill={GOLD} />
-      <circle cx={p.x} cy={p.y} r={3} fill="#FFF8EA" />
+      {items.map(({ s, t, src, fade }) => {
+        const flying = t > 0 && t < 1;
+        const head = qbez(s, Math.min(1, Math.max(0, t)));
+        const tail = qbez(s, Math.max(0, Math.min(1, t) - 0.16));
+        const op = flying ? Math.min(1, Math.sin(t * Math.PI) * 2.4) : 0;
+        const line = flying ? 0.2 * op : 0.22 * fade;
+        return (
+          <g key={`${s.tone}-${s.start}`}>
+            {line > 0.005 ? (
+              <polyline
+                points={trail(s, Math.min(1, Math.max(0, t)))}
+                fill="none"
+                stroke={alpha(s.tone, line)}
+                strokeWidth={s.head * 0.5}
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            ) : null}
+            {flying ? (
+              <>
+                <line x1={tail.x} y1={tail.y} x2={head.x} y2={head.y} stroke={alpha(s.tone, 0.55 * op)} strokeWidth={s.head * 0.45} strokeLinecap="round" />
+                <circle cx={head.x} cy={head.y} r={s.head * 3} fill={alpha(s.tone, 0.16 * op)} />
+                <circle cx={head.x} cy={head.y} r={s.head} fill={s.tone} />
+                <circle cx={head.x} cy={head.y} r={s.head * 0.46} fill="#FFF8EA" />
+              </>
+            ) : null}
+            {src > 0.01 ? (
+              <>
+                <circle cx={s.a.x} cy={s.a.y} r={s.head * (1.4 + 2.2 * (1 - src))} fill={alpha(s.tone, 0.26 * src)} />
+                <circle cx={s.a.x} cy={s.a.y} r={s.head * 0.75} fill={alpha(s.tone, 0.8 * src)} />
+              </>
+            ) : null}
+          </g>
+        );
+      })}
     </svg>
   );
 };
 
-// Full S06: spotlight (172f) hands over to the UID → Lark shot (420f).
+// Full S06: spotlight (172f) hands over to the chat → workflow → Lark shot (486f).
 export const S06ReplyFull: FC = () => (
   <AbsoluteFill>
     <Sequence durationInFrames={172}>
       <S06Spotlight />
     </Sequence>
-    <Sequence from={172} durationInFrames={DURATION}>
+    <Sequence from={138} durationInFrames={DURATION}>
       <S06Reply />
     </Sequence>
   </AbsoluteFill>

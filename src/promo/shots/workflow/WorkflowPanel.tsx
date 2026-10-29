@@ -6,6 +6,7 @@ import { FAN_B, LEAD_END, LEAD_START, NOTIFY_AT, NOTIFY_NODE, PANEL, cameraAt, n
 const GREEN = '#3DDC97';
 const ORANGE = '#F5A03B';
 const GOLD = '#E4C58A';
+const CYAN = '#8FD8FF';
 const LABEL = '#D3D8E0';
 const DOT = '#39404B';
 
@@ -26,7 +27,7 @@ export const WorkflowPanel: FC<Props> = ({ frame, open, content }) => {
   const cam = cameraAt(frame);
   const st = stateAt(frame);
   const z = cam.zoom;
-  const running = frame >= LEAD_START && frame < LEAD_END;
+  const running = (frame >= LEAD_START && frame < LEAD_END) || st.quickRunning;
   const chip = running ? '运行中' : frame >= NOTIFY_AT ? '已推送 Lark 通知' : '待机';
 
   return (
@@ -80,7 +81,7 @@ export const WorkflowPanel: FC<Props> = ({ frame, open, content }) => {
             : null}
           {EDGES.map((e) => {
             const key = `${e.s}|${e.t}|${e.kind}|${e.out}`;
-            const flowing = st.flow.has(key);
+            const flowing = st.flow.has(key) || st.quickFlow.has(key);
             const glow = st.afterglow.get(key) ?? 0;
             const visited = st.visited.has(key);
             const ai = e.kind !== 'main';
@@ -118,6 +119,18 @@ export const WorkflowPanel: FC<Props> = ({ frame, open, content }) => {
                 />
                 <circle cx={pt.x} cy={pt.y} r={r * 3.1} fill={alpha(tone, 0.2)} />
                 <circle cx={pt.x} cy={pt.y} r={r} fill={tone} stroke="rgba(255,255,255,0.92)" strokeWidth={1.5 / z} />
+              </g>
+            );
+          })}
+          {[...st.quickFlow.values()].map(({ s, progress }) => {
+            const pt = pointOn(s.e.p, progress);
+            const prev = pointOn(s.e.p, Math.max(0, progress - 0.09));
+            const r = 6 / z;
+            return (
+              <g key={`quick-${s.e.s}|${s.e.t}|${s.a}`}>
+                <line x1={prev.x} y1={prev.y} x2={pt.x} y2={pt.y} stroke={alpha(CYAN, 0.45)} strokeWidth={r * 1.1} strokeLinecap="round" />
+                <circle cx={pt.x} cy={pt.y} r={r * 3} fill={alpha(CYAN, 0.22)} />
+                <circle cx={pt.x} cy={pt.y} r={r} fill={CYAN} stroke="rgba(255,255,255,0.95)" strokeWidth={1.5 / z} />
               </g>
             );
           })}

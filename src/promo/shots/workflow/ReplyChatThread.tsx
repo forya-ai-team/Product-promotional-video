@@ -9,13 +9,13 @@ export type ReplyMessage = { kind: 'in' | 'out'; text: string; at: number; lines
 // Mock DM: the bot guides the download, the customer answers with the UID he
 // registered in the app. Timings are the shot's beats (plan.ts).
 export const REPLY_MESSAGES: ReplyMessage[] = [
-  { kind: 'in', text: 'hey! how do I get started?', at: 20, lines: 1 },
-  { kind: 'out', text: 'Welcome to Oumi 👋 Want to grow your TikTok account?', at: 44, lines: 1 },
-  { kind: 'in', text: 'yes! I need more real followers', at: 68, lines: 1 },
-  { kind: 'out', text: "Download the Oumi app and sign up first — it's free.", at: 94, lines: 1 },
-  { kind: 'in', text: 'ok, just downloaded it', at: 120, lines: 1 },
-  { kind: 'out', text: 'Nice. Open your profile page and send me your UID.', at: 144, lines: 1 },
-  { kind: 'in', text: '2194615', at: 170, lines: 1 },
+  { kind: 'in', text: 'hey! how do I get started?', at: 16, lines: 1 },
+  { kind: 'out', text: 'Welcome to Oumi 👋 Want to grow your TikTok account?', at: 54, lines: 1 },
+  { kind: 'in', text: 'yes! I need more real followers', at: 72, lines: 1 },
+  { kind: 'out', text: "Download the Oumi app and sign up first — it's free.", at: 110, lines: 1 },
+  { kind: 'in', text: 'ok, just downloaded it', at: 128, lines: 1 },
+  { kind: 'out', text: 'Nice. Open your profile page and send me your UID.', at: 166, lines: 1 },
+  { kind: 'in', text: '2194615', at: 184, lines: 1 },
 ];
 
 const IN_H = 40;
