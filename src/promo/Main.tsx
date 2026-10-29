@@ -8,6 +8,7 @@ import { S03 } from './scenes/S03';
 import { S04 } from './scenes/S04';
 import { S05 } from './scenes/S05';
 import { S06ReplyFull } from './scenes/S06Reply';
+import { S065Feed } from './scenes/S065Feed';
 import { S07EndCard } from './scenes/S07EndCard';
 import { Soundtrack } from './Soundtrack';
 import { tokens } from './theme/tokens';
@@ -22,6 +23,7 @@ const SCENE_COMPONENTS: Record<string, FC> = {
   S04,
   S05,
   S06: S06ReplyFull,
+  S065: S065Feed,
   S07: S07EndCard,
 };
 

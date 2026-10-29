@@ -12,6 +12,7 @@ import { S05Static } from './promo/scenes/S05Static';
 import { S06ReplyFull } from './promo/scenes/S06Reply';
 import { S06Spotlight } from './promo/scenes/S06Spotlight';
 import { S06Static } from './promo/scenes/S06Static';
+import { S065Feed } from './promo/scenes/S065Feed';
 import { S07EndCard } from './promo/scenes/S07EndCard';
 import {
   FPS,
@@ -22,6 +23,7 @@ import {
   S05_DURATION,
   S06_DURATION,
   S06_SPOTLIGHT_DURATION,
+  S065_DURATION,
   S07_DURATION,
   TOTAL_FRAMES,
 } from './promo/timeline';
@@ -122,6 +124,14 @@ export const RemotionRoot: FC = () => {
         id="S06Reply"
         component={S06ReplyFull}
         durationInFrames={S06_DURATION}
+        fps={FPS}
+        width={1920}
+        height={1080}
+      />
+      <Composition
+        id="S065Feed"
+        component={S065Feed}
+        durationInFrames={S065_DURATION}
         fps={FPS}
         width={1920}
         height={1080}

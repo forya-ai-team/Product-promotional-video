@@ -14,7 +14,10 @@ export const S05_DURATION = 540;
 export const S06_SPOTLIGHT_DURATION = 172;
 export const S06_REPLY_DURATION = 486;
 export const S06_DURATION = S06_SPOTLIGHT_DURATION + S06_REPLY_DURATION; // 658
-export const S07_DURATION = sec(3); // 90
+export const S065_DURATION = 312;
+// icon-flip-bloom: flip 46, bloom 52, settle-into-size 84, brand field 90,
+// tagline 105–129, then a 33f hold.
+export const S07_DURATION = 162;
 
 export type TransitionKind =
   | 'cut'
@@ -87,11 +90,24 @@ export const SCENES: SceneSpec[] = [
     acceptanceFrames: [S06_SPOTLIGHT_DURATION, 172 + 206, 172 + 372, S06_DURATION - 1],
   },
   {
+    id: 'S065',
+    title: '报告瀑布流',
+    durationInFrames: S065_DURATION,
+    transitionAfter: { kind: 'dissolve', durationInFrames: 16 },
+    cards: [],
+    // seam hold / mid-flight 3D toss / wall bloomed / pull-back begins /
+    // ghost LOD swapped / settled wall
+    acceptanceFrames: [8, 34, 96, 150, 230, S065_DURATION - 1],
+  },
+  {
     id: 'S07',
     title: '品牌尾卡',
     durationInFrames: S07_DURATION,
-    cards: [],
-    acceptanceFrames: [12, sec(2), S07_DURATION - 1],
+    cards: ['ui-to-brand-morph'],
+    styles: ['icon-flip-bloom'],
+    // wobble peak / thinnest frame / first frame after the swap / bloom overshoot
+    // / mid shrink / brand field rising / tagline rising / final frame
+    acceptanceFrames: [22, 45, 46, 58, 74, 96, 118, S07_DURATION - 1],
   },
 ];
 
@@ -107,8 +123,8 @@ export const sceneStart = (index: number) =>
     0,
   ) - overlapBefore(index);
 
-// No extra safety tail: S07 holds the brand lockup for 2.5s, so the last frame
-// of the composition is already a settled brand card.
+// No extra safety tail: S07 settles the wordmark at 84f and the tagline at 129f,
+// so the final 33f already hold a settled brand card and the last frame is that card.
 export const TOTAL_FRAMES =
   SCENES.reduce((total, scene) => total + scene.durationInFrames, 0) -
   overlapBefore(SCENES.length);

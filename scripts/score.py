@@ -13,9 +13,10 @@ Beat grids are anchored to picture cues, in frames @30fps:
   446f  the four S02 picker clicks sit on beats (15f = 0.5s = one beat)
   1915f the S05 burst is the drop's downbeat
   2191f the S06 reply flow is the last groove's downbeat
-The final cadence (2553f / 2661f) is free because the drums have stopped.
+The final cadence (2553f / 2661f) is free because the drums have stopped; the
+tail card's own beats (2707 flip / 2719 bloom / 2751 brand field) are SFX only.
 
-Outputs (48 kHz stereo float32, 91.7 s = 2751 frames):
+Outputs (48 kHz stereo float32, 94.1 s = 2823 frames):
   public/audio/bgm/apple-score-bgm.wav   music bed
   public/audio/sfx/apple-score-sfx.wav   designed SFX (kept in the no-BGM cut)
 
@@ -31,7 +32,11 @@ from scipy.ndimage import uniform_filter1d
 
 SR = 48000
 FPS = 30
-TOTAL_FRAMES = 2751
+# Written for the S07-only timeline (2823f, S07 at 2661f). The working tree now also
+# carries the undecided S065 scene -> 3119f with S07 at 2957f, so these stems leave
+# the last 9.87s silent and the tail cues sit 296f early. See docs/decisions.md D46
+# before rendering a delivery master.
+TOTAL_FRAMES = 2823
 DUR = TOTAL_FRAMES / FPS
 N = int(round(SR * DUR))
 rng = np.random.default_rng(20261029)
@@ -51,6 +56,9 @@ DIP_MID = 2027 / FPS
 S06_REPLY = 2191 / FPS
 REPORT = 2553 / FPS
 END_CARD = 2661 / FPS
+MORPH_FLIP = (2661 + 46) / FPS    # S07 icon hits its thinnest frame
+MORPH_LAND = (2661 + 58) / FPS    # wordmark finished blooming
+MORPH_FIELD = (2661 + 90) / FPS   # orbit field + platform nodes fade in
 END = DUR
 
 BEAT = 0.5  # 120 BPM
@@ -641,6 +649,12 @@ add_mono(sfx, sfx_send, make_sparkle([1046.5, 1318.51, 1567.98], 0.5), REPORT + 
 add_mono(sfx, sfx_send, make_impact(), END_CARD, gain=0.42, send=0.6)
 add_mono(sfx, sfx_send, make_whoosh(1.4), END_CARD - 0.6, gain=0.3, send=0.35)
 add_mono(sfx, sfx_send, make_sparkle([1760.0, 2637.02, 3520.0], 0.4), END_CARD + 0.02, gain=0.26, pan=0.25, send=0.65)
+
+# End card morph: 唰 into the flip, 嗒 when the wordmark finishes blooming,
+# sparkle as the orbit field arrives under the lockup.
+add_mono(sfx, sfx_send, make_whoosh(0.7), MORPH_FLIP - 0.5, gain=0.42, send=0.3)
+add_mono(sfx, sfx_send, make_click(), MORPH_LAND, gain=0.3, pan=0.1, send=0.2)
+add_mono(sfx, sfx_send, make_sparkle([2093.0, 2637.02, 3135.96], 0.6), MORPH_FIELD, gain=0.2, pan=-0.2, send=0.6)
 
 # ── Reverb ──────────────────────────────────────────────────────────────────
 def make_ir(seconds=1.9, rt60=1.45):

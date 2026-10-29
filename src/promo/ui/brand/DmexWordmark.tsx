@@ -26,7 +26,12 @@ const X_STOPS = X_GRADIENT.map((stop) => (
   <stop key={stop.offset} offset={stop.offset} stopColor={stop.color} />
 ));
 
-export const DmexXMark: FC<{ width: number }> = ({ width }) => {
+const clamp01 = (value: number) => Math.min(1, Math.max(0, value));
+
+export const DmexXMark: FC<{ width: number; solid?: boolean }> = ({
+  width,
+  solid = false,
+}) => {
   const gradientId = `dmex-xmark-${useId().replace(/[:]/g, '')}`;
 
   return (
@@ -50,13 +55,22 @@ export const DmexXMark: FC<{ width: number }> = ({ width }) => {
           {X_STOPS}
         </linearGradient>
       </defs>
-      <path d={X} fill={`url(#${gradientId})`} fillRule="evenodd" />
+      <path d={X} fill={solid ? INK : `url(#${gradientId})`} fillRule="evenodd" />
     </svg>
   );
 };
 
-export const DmexWordmark: FC<{ width: number }> = ({ width }) => {
+// The X doubles as the brand's mark, so the tail card flips the icon and lets the
+// colour arrive along the gradient's own diagonal axis (284,144 -> 352,198).
+// `reveal` sweeps a 45-degree clip edge across that axis: 0 = solid ink, 1 = full gradient.
+export const DmexWordmark: FC<{ width: number; reveal?: number }> = ({
+  width,
+  reveal = 1,
+}) => {
   const gradientId = `dmex-x-${useId().replace(/[:]/g, '')}`;
+  const clipId = `dmex-x-clip-${useId().replace(/[:]/g, '')}`;
+  const full = reveal >= 1;
+  const edge = 270 + 96 * clamp01(reveal);
 
   return (
     <svg
@@ -78,9 +92,32 @@ export const DmexWordmark: FC<{ width: number }> = ({ width }) => {
         >
           {X_STOPS}
         </linearGradient>
+        {!full ? (
+          <clipPath id={clipId} clipPathUnits="userSpaceOnUse">
+            <rect
+              x={edge - 300}
+              y={-29}
+              width={300}
+              height={400}
+              transform="rotate(45 318 171)"
+            />
+          </clipPath>
+        ) : null}
       </defs>
       <path d={DME} fill={INK} fillRule="evenodd" />
-      <path d={X} fill={`url(#${gradientId})`} fillRule="evenodd" />
+      {full ? (
+        <path d={X} fill={`url(#${gradientId})`} fillRule="evenodd" />
+      ) : (
+        <>
+          <path d={X} fill={INK} fillRule="evenodd" />
+          <path
+            d={X}
+            fill={`url(#${gradientId})`}
+            fillRule="evenodd"
+            clipPath={`url(#${clipId})`}
+          />
+        </>
+      )}
     </svg>
   );
 };
