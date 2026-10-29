@@ -10,6 +10,7 @@ import { S04Static } from './promo/scenes/S04Static';
 import { S05, S05_DURATION } from './promo/scenes/S05';
 import { S05Static } from './promo/scenes/S05Static';
 import { S06Spotlight, S06_SPOTLIGHT_DURATION } from './promo/scenes/S06Spotlight';
+import { S06ReplyFull, S06_REPLY_TOTAL } from './promo/scenes/S06Reply';
 import { S06Static } from './promo/scenes/S06Static';
 import { FPS, TOTAL_FRAMES } from './promo/timeline';
 import { ThreeProbe } from './promo/three/ThreeProbe';
@@ -93,6 +94,14 @@ export const RemotionRoot: FC = () => {
         id="S06Spotlight"
         component={S06Spotlight}
         durationInFrames={S06_SPOTLIGHT_DURATION}
+        fps={FPS}
+        width={1920}
+        height={1080}
+      />
+      <Composition
+        id="S06Reply"
+        component={S06ReplyFull}
+        durationInFrames={S06_REPLY_TOTAL}
         fps={FPS}
         width={1920}
         height={1080}

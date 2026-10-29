@@ -1,0 +1,377 @@
+import type { FC } from 'react';
+import { EASE, alpha } from '../spotlightHeroCard/polish';
+import { EDGES, NODES, WORLD } from './workflowData';
+import { LEAD_END, PANEL, REPLY_AT, REPLY_NODE, cameraAt, nodeTop, pointOn, stateAt, worldToPanel } from './plan';
+
+const GREEN = '#3DDC97';
+const ORANGE = '#F5A03B';
+const GOLD = '#E4C58A';
+const LABEL = '#D3D8E0';
+const DOT = '#39404B';
+
+const ramp = (f: number, from: number, len: number) => EASE.out(Math.min(1, Math.max(0, (f - from) / len)));
+
+type Callout = { from: number; to: number; text: string; node?: string; panel?: { x: number; y: number } };
+
+const CALLOUTS: Callout[] = [
+  { from: 52, to: 74, node: 'Webhook', text: 'Webhook 触发' },
+  { from: 90, to: 114, node: 'Intent Classifier', text: 'AI 意图识别' },
+  { from: 112, to: 162, panel: { x: 22, y: 78 }, text: '6 路分支并行' },
+  { from: 250, to: 334, panel: { x: 22, y: 78 }, text: '连续应答 · 全自动' },
+];
+
+type Props = { frame: number; open: number; content: number };
+
+export const WorkflowPanel: FC<Props> = ({ frame, open, content }) => {
+  const cam = cameraAt(frame);
+  const st = stateAt(frame);
+  const z = cam.zoom;
+  const answered = REPLY_AT.filter((f) => frame >= f).length;
+  const running = frame >= 50 && frame < LEAD_END;
+  const chip = running ? '运行中' : answered > 0 ? `已自动应答 ${answered} 条` : '待机';
+
+  return (
+    <div
+      style={{
+        position: 'absolute',
+        left: PANEL.x + (1 - open) * (1920 - PANEL.x),
+        top: PANEL.y,
+        width: PANEL.w,
+        height: PANEL.h,
+        borderRadius: PANEL.r,
+        overflow: 'hidden',
+        background: 'radial-gradient(78% 62% at 56% 42%, #171C24 0%, #0F1318 58%, #0B0E12 100%)',
+        border: '1px solid rgba(255,255,255,0.10)',
+        boxShadow: '-30px 46px 110px rgba(0,0,0,0.55), 0 0 0 1px rgba(228,197,138,0.10)',
+        transform: 'translateZ(2px)',
+      }}
+    >
+      <div
+        style={{
+          position: 'absolute',
+          inset: 0,
+          opacity: content,
+          transform: `translate(${(PANEL.w / 2 - cam.cx * z).toFixed(2)}px, ${(
+            PANEL.h / 2 -
+            cam.cy * z
+          ).toFixed(2)}px) scale(${z.toFixed(4)})`,
+          transformOrigin: '0 0',
+        }}
+      >
+        <svg width={WORLD.w} height={WORLD.h} style={{ position: 'absolute', left: 0, top: 0 }}>
+          <defs>
+            <pattern id="wf-dots" width={16} height={16} patternUnits="userSpaceOnUse">
+              <circle cx={0.9} cy={0.9} r={1.9} fill={DOT} />
+            </pattern>
+          </defs>
+          <rect x={0} y={0} width={WORLD.w} height={WORLD.h} fill="url(#wf-dots)" />
+          {st.flow.size > 0
+            ? [...st.flow.values()].map(({ s }) => {
+                const key = `${s.e.s}|${s.e.t}|${s.e.kind}|${s.e.out}`;
+                return (
+                  <path
+                    key={`halo-${key}`}
+                    d={pathOf(s.e.p)}
+                    fill="none"
+                    stroke={alpha(GREEN, 0.16)}
+                    strokeWidth={9 / z}
+                  />
+                );
+              })
+            : null}
+          {EDGES.map((e) => {
+            const key = `${e.s}|${e.t}|${e.kind}|${e.out}`;
+            const flowing = st.flow.has(key);
+            const glow = st.afterglow.get(key) ?? 0;
+            const visited = st.visited.has(key);
+            const ai = e.kind !== 'main';
+            const color = flowing ? GREEN : glow > 0 ? alpha(GREEN, 0.35 + 0.45 * glow) : visited ? '#2F8F6B' : ai ? '#333A45' : '#434B57';
+            return (
+              <path
+                key={key}
+                d={pathOf(e.p)}
+                fill="none"
+                stroke={color}
+                strokeWidth={(flowing ? 2.8 : glow > 0 ? 2.1 : ai ? 1.0 : 1.3) / z}
+                strokeDasharray={
+                  flowing ? `${7 / z} ${5 / z}` : ai ? `${3 / z} ${3.5 / z}` : undefined
+                }
+                strokeDashoffset={flowing ? -((frame * 1.6) % (12 / z)) : undefined}
+                strokeLinecap="round"
+              />
+            );
+          })}
+          {[...st.flow.values()].map(({ s, progress }) => {
+            const pt = pointOn(s.e.p, progress);
+            const tone = s.tone === 'lead' ? ORANGE : GREEN;
+            const r = (s.e.kind === 'main' ? 7.4 : 5.6) / z;
+            const prev = pointOn(s.e.p, Math.max(0, progress - 0.07));
+            return (
+              <g key={`pkt-${s.e.s}|${s.e.t}|${s.e.kind}|${s.e.out}|${s.a}`}>
+                <line
+                  x1={prev.x}
+                  y1={prev.y}
+                  x2={pt.x}
+                  y2={pt.y}
+                  stroke={alpha(tone, 0.4)}
+                  strokeWidth={r * 1.1}
+                  strokeLinecap="round"
+                />
+                <circle cx={pt.x} cy={pt.y} r={r * 3.1} fill={alpha(tone, 0.2)} />
+                <circle cx={pt.x} cy={pt.y} r={r} fill={tone} stroke="rgba(255,255,255,0.92)" strokeWidth={1.5 / z} />
+              </g>
+            );
+          })}
+        </svg>
+
+        {NODES.map((n) => {
+          const active = st.activeNodes.has(n.name);
+          const visited = st.visitedNodes.has(n.name);
+          const pulse = n.name === 'Webhook' ? st.webhookPulse : 0;
+          const radius = n.kind === 'webhook' ? 30 : n.kind === 'support' ? '50%' : 8;
+          return (
+            <div
+              key={n.name}
+              style={{
+                position: 'absolute',
+                left: n.x,
+                top: n.y,
+                width: n.w,
+                height: n.h,
+                borderRadius: radius,
+                boxSizing: 'border-box',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: 8,
+                background: active ? '#13291F' : '#1E222A',
+                border: `${(active ? 2.2 : 1.6) / z}px solid ${
+                  active ? GREEN : visited ? '#2F8F6B' : '#4B525C'
+                }`,
+                boxShadow: active
+                  ? `0 0 0 ${(7 + pulse * 6) / z}px ${alpha(GREEN, 0.12)}, 0 0 ${(26 + pulse * 18) / z}px ${alpha(GREEN, 0.34)}`
+                  : `0 ${7 / z}px ${16 / z}px rgba(0,0,0,0.34)`,
+                opacity: n.disabled ? 0.45 : 1,
+              }}
+            >
+              <span
+                style={{
+                  fontSize: n.kind === 'agent' ? 24 : 27,
+                  lineHeight: 1,
+                  color: active ? '#EFFBF4' : n.color,
+                  fontWeight: 600,
+                }}
+              >
+                {n.glyph}
+              </span>
+              {n.kind === 'agent' ? (
+                <span
+                  style={{
+                    fontSize: 12,
+                    lineHeight: 1.25,
+                    color: active ? '#EFFBF4' : '#C3C8D0',
+                    maxWidth: 140,
+                  }}
+                >
+                  {n.name}
+                </span>
+              ) : null}
+            </div>
+          );
+        })}
+
+        {NODES.map((n) => (
+          <div
+            key={`label-${n.name}`}
+            style={{
+              position: 'absolute',
+              left: n.x + n.w / 2,
+              top: n.y + n.h + 7,
+              transform: 'translateX(-50%)',
+              width: 196,
+              textAlign: 'center',
+              fontSize: 12.5,
+              lineHeight: '15px',
+              color: LABEL,
+              whiteSpace: 'nowrap',
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+              opacity: 0.85,
+            }}
+          >
+            {n.name}
+          </div>
+        ))}
+      </div>
+
+      <div
+        style={{
+          position: 'absolute',
+          inset: 0,
+          pointerEvents: 'none',
+          background:
+            'radial-gradient(ellipse 80% 80% at 50% 45%, rgba(0,0,0,0) 55%, rgba(0,0,0,0.42) 100%)',
+        }}
+      />
+
+      {CALLOUTS.map((c) => {
+        const vis = Math.min(ramp(frame, c.from, 8), 1 - ramp(frame, c.to - 6, 8));
+        if (vis <= 0.01) return null;
+        const p = c.panel ?? worldToPanel(nodeTop(c.node!).x, nodeTop(c.node!).y, cam);
+        const transform = c.panel ? 'none' : 'translate(-50%, -100%)';
+        return (
+          <div
+            key={c.text}
+            style={{
+              position: 'absolute',
+              left: p.x,
+              top: p.y,
+              transform,
+              opacity: vis,
+              display: 'flex',
+              alignItems: 'center',
+              gap: 10,
+              padding: '9px 15px',
+              borderRadius: 10,
+              background: 'rgba(10,9,8,0.78)',
+              border: `1px solid ${alpha(GOLD, 0.3)}`,
+              boxShadow: '0 10px 30px rgba(0,0,0,0.45)',
+              whiteSpace: 'nowrap',
+            }}
+          >
+            <span style={{ width: 8, height: 8, borderRadius: 4, background: GOLD }} />
+            <span style={{ fontSize: 32, lineHeight: '34px', fontWeight: 600, color: '#F7F0E2' }}>
+              {c.text}
+            </span>
+          </div>
+        );
+      })}
+
+      <svg
+        width={PANEL.w}
+        height={PANEL.h}
+        style={{ position: 'absolute', left: 0, top: 0, pointerEvents: 'none' }}
+      >
+        {REPLY_AT.map((t, i) => {
+          const age = frame - t;
+          if (age < 0 || age > 14) return null;
+          const p = worldToPanel(REPLY_NODE.x, REPLY_NODE.y, cam);
+          const r = 16 + (age / 14) * 76;
+          return (
+            <circle
+              key={`ring-${i}`}
+              cx={p.x}
+              cy={p.y}
+              r={r}
+              fill="none"
+              stroke={alpha(GREEN, 0.7 * (1 - age / 14))}
+              strokeWidth={2}
+            />
+          );
+        })}
+      </svg>
+
+      <div
+        style={{
+          position: 'absolute',
+          right: 16,
+          bottom: 16,
+          padding: 7,
+          borderRadius: 10,
+          background: 'rgba(7,9,12,0.82)',
+          border: '1px solid rgba(255,255,255,0.12)',
+          boxShadow: '0 8px 24px rgba(0,0,0,0.4)',
+        }}
+      >
+        <svg width={190} height={72}>
+          <clipPath id="wf-mini">
+            <rect width={190} height={72} rx={4} />
+          </clipPath>
+          <g clipPath="url(#wf-mini)">
+            <rect width={190} height={72} fill="rgba(255,255,255,0.03)" />
+            {NODES.map((n) => (
+              <circle
+                key={`mini-${n.name}`}
+                cx={(n.x + n.w / 2) * (190 / WORLD.w)}
+                cy={(n.y + n.h / 2) * (190 / WORLD.w)}
+                r={1.1}
+                fill="#7A8494"
+              />
+            ))}
+            <rect
+              x={(cam.cx - PANEL.w / 2 / cam.zoom) * (190 / WORLD.w)}
+              y={(cam.cy - PANEL.h / 2 / cam.zoom) * (190 / WORLD.w)}
+              width={(PANEL.w / cam.zoom) * (190 / WORLD.w)}
+              height={(PANEL.h / cam.zoom) * (190 / WORLD.w)}
+              fill="none"
+              stroke={alpha(GOLD, 0.75)}
+              strokeWidth={1}
+            />
+          </g>
+        </svg>
+      </div>
+
+      <div
+        style={{
+          position: 'absolute',
+          left: 16,
+          bottom: 16,
+          padding: '7px 13px',
+          borderRadius: 9,
+          background: 'rgba(7,9,12,0.78)',
+          border: '1px solid rgba(255,255,255,0.1)',
+          fontSize: 18,
+          fontWeight: 500,
+          color: '#8D97A5',
+          letterSpacing: '0.02em',
+        }}
+      >
+        161 节点 · 210 连线
+      </div>
+
+      <div
+        style={{
+          position: 'absolute',
+          left: 0,
+          right: 0,
+          top: 0,
+          height: 64,
+          display: 'flex',
+          alignItems: 'center',
+          gap: 10,
+          padding: '0 20px',
+          background: 'linear-gradient(rgba(9,11,14,0.97) 52%, rgba(9,11,14,0))',
+        }}
+      >
+        <span
+          style={{
+            width: 8,
+            height: 8,
+            borderRadius: 4,
+            background: running ? GREEN : answered > 0 ? GREEN : '#6B7280',
+            boxShadow: running ? `0 0 12px ${GREEN}` : undefined,
+          }}
+        />
+        <span style={{ fontSize: 21, fontWeight: 600, color: '#E9EBEF', letterSpacing: '0.01em' }}>
+          自动应答 · 工作流
+        </span>
+        <span
+          style={{
+            marginLeft: 'auto',
+            padding: '5px 13px',
+            borderRadius: 20,
+            fontSize: 14,
+            color: answered > 0 ? '#8FEBC2' : '#A7AEB8',
+            background: answered > 0 ? 'rgba(61,220,151,0.10)' : 'rgba(255,255,255,0.05)',
+            border: `1px solid ${answered > 0 ? 'rgba(61,220,151,0.32)' : 'rgba(255,255,255,0.10)'}`,
+          }}
+        >
+          {chip}
+        </span>
+      </div>
+    </div>
+  );
+};
+
+const pathOf = (p: readonly number[]) =>
+  `M${p[0]},${p[1]} C${p[2]},${p[3]} ${p[4]},${p[5]} ${p[6]},${p[7]}`;

@@ -1,4 +1,4 @@
-import type { FC } from 'react';
+import type { FC, ReactNode } from 'react';
 import { Img, staticFile } from 'remotion';
 import { S06_CHAT } from './s06Data';
 
@@ -27,6 +27,11 @@ type ChatPanelProps = {
   height?: number;
   radius?: number;
   background?: string;
+  /** Scrolls the message block up as new bubbles are appended (animated thread). */
+  threadShift?: number;
+  footerOpacity?: number;
+  /** Extra bubbles rendered inside the scrolled block, in card coordinates. */
+  extra?: ReactNode;
 };
 
 export const ChatPanel: FC<ChatPanelProps> = ({
@@ -34,6 +39,9 @@ export const ChatPanel: FC<ChatPanelProps> = ({
   height = CHAT_PANEL_H,
   radius = 0,
   background = '#000000',
+  threadShift = 0,
+  footerOpacity = 1,
+  extra,
 }) => {
   const inputTop = height - 62;
   const footerTop = height - 96;
@@ -55,7 +63,7 @@ export const ChatPanel: FC<ChatPanelProps> = ({
         fontFamily: PAGE_FONT,
       }}
     >
-      <div style={{ position: 'absolute', left: 0, top: 0, width: '100%', height: CHAT_HEADER_H, borderBottom: `1px solid ${BORDER}` }}>
+      <div style={{ position: 'absolute', left: 0, top: 0, width: '100%', height: CHAT_HEADER_H, borderBottom: `1px solid ${BORDER}`, background, zIndex: 2 }}>
         <Img
           src={staticFile(S06_CHAT.peerAvatar)}
           style={{
@@ -95,6 +103,14 @@ export const ChatPanel: FC<ChatPanelProps> = ({
         </div>
       </div>
 
+      <div
+        style={{
+          position: 'absolute',
+          inset: 0,
+          zIndex: 1,
+          transform: threadShift ? `translateY(${-threadShift}px)` : undefined,
+        }}
+      >
       <div
         style={{
           position: 'absolute',
@@ -201,9 +217,13 @@ export const ChatPanel: FC<ChatPanelProps> = ({
           fontSize: 13,
           lineHeight: '16px',
           color: '#A0A0A0',
+          opacity: footerOpacity,
         }}
       >
         {S06_CHAT.footer}
+      </div>
+
+      {extra}
       </div>
 
       <div
@@ -215,6 +235,7 @@ export const ChatPanel: FC<ChatPanelProps> = ({
           height: 46,
           borderRadius: 10,
           background: '#1F1F1F',
+          zIndex: 2,
         }}
       >
         <div
