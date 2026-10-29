@@ -135,15 +135,47 @@ const ActionButtons: FC = () => (
   </div>
 );
 
-const Row: FC<{ row: ConfigRow; reveal: number; glow: number }> = ({ row, reveal, glow }) => (
-  <div style={{ position: 'relative', height: tol.layout.rowHeight, opacity: reveal }}>
+export type RowMotion = {
+  reveal: number;
+  air: number;
+  settle: number;
+  blur: number;
+};
+
+const Row: FC<{ row: ConfigRow; reveal: number; glow: number; motion?: RowMotion }> = ({
+  row,
+  reveal,
+  glow,
+  motion,
+}) => {
+  const air = motion?.air ?? 0;
+  const settle = motion?.settle ?? 1;
+  const moving = air > 0.0015 || settle < 0.999;
+  const scale = air > 0.0015 ? 1.06 - 0.065 * (1 - air) : 0.995 + 0.005 * settle;
+
+  return (
+  <div style={{ position: 'relative', height: tol.layout.rowHeight, opacity: motion?.reveal ?? reveal }}>
     <div
       style={{
         position: 'absolute',
         inset: 0,
-        transform: `translateY(${(1 - reveal) * -10}px)`,
+        transform: moving
+          ? `perspective(900px) translateY(${(-120 * air).toFixed(2)}px) rotateX(${(16 * air).toFixed(3)}deg) scale(${scale.toFixed(4)})`
+          : undefined,
+        filter: motion && motion.blur > 0.12 ? `blur(${motion.blur.toFixed(2)}px)` : undefined,
       }}
     >
+      {air > 0.001 ? (
+        <div
+          style={{
+            position: 'absolute',
+            inset: 0,
+            background: tol.color.windowBg,
+            opacity: Math.min(1, air / 0.04),
+            boxShadow: `0 ${(8 * air).toFixed(1)}px ${(18 * air).toFixed(1)}px rgba(30, 52, 96, ${(0.12 * air).toFixed(3)})`,
+          }}
+        />
+      ) : null}
       <Checkbox left={14} top={14.5} />
       <div
         style={{
@@ -201,7 +233,8 @@ const Row: FC<{ row: ConfigRow; reveal: number; glow: number }> = ({ row, reveal
       />
     ) : null}
   </div>
-);
+  );
+};
 
 const Scrollbar: FC<{ opacity: number; thumbHeight: number; progress: number }> = ({
   opacity,
@@ -250,6 +283,8 @@ const Scrollbar: FC<{ opacity: number; thumbHeight: number; progress: number }> 
 type MainAreaProps = {
   rows?: ConfigRow[];
   rowReveal?: (index: number) => number;
+  rowMotion?: (index: number) => RowMotion;
+  rowBlur?: number;
   scrollOffset?: number;
   scrollProgress?: number;
   rowGlow?: number;
@@ -265,6 +300,8 @@ const alwaysOne = () => 1;
 export const MainArea: FC<MainAreaProps> = ({
   rows = REFERENCE_ROWS,
   rowReveal = alwaysOne,
+  rowMotion,
+  rowBlur = 0,
   scrollOffset = 0,
   scrollProgress = 0,
   rowGlow = 0,
@@ -388,13 +425,19 @@ export const MainArea: FC<MainAreaProps> = ({
             overflow: 'hidden',
           }}
         >
-          <div style={{ transform: `translateY(${-scrollOffset}px)` }}>
+          <div
+            style={{
+              transform: `translateY(${-scrollOffset}px)`,
+              filter: rowBlur > 0.05 ? `blur(${rowBlur.toFixed(2)}px)` : undefined,
+            }}
+          >
             {rows.map((row, index) => (
               <Row
                 key={`${row.name}-${index}`}
                 row={row}
                 reveal={rowReveal(index)}
                 glow={rowGlow}
+                motion={rowMotion?.(index)}
               />
             ))}
           </div>

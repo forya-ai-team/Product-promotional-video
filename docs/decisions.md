@@ -371,3 +371,26 @@
 - **影响**：`src/promo/scenes/S05.tsx` 重写；新增 `S05BeatCut.tsx` 与 Root 注册（备份独立 540f，新增 `S05BEATCUT_DURATION`）；`TikTokMessages` 导出 `MessageRequestsRow` + 行尺寸常量（S05Static 的请求行区域与旧基准 0 差异，差异只在过时的标题栏基准）；`timeline.ts` 的 S05 时长 540→**480**、标题/cards/验收帧为 `消息请求 8 秒涨到 999` / `glass-pill-dictation-typing` / 15·45·60·120·240·300·360·479；§19 成片表、接缝与冲击预算同步。S05 起点仍 1495f，涌入段在成片 1615–1855f、落定与爆发同为 1855f、S05→S055 硬切 **1975f**；S055 及之后所有场景提前 60f，ProductPromo 3315→**3255f / 108.50s**。**音频欠账**：涌入段（1615–1855f）的 riser 与 1855f impact 仍无 SFX；现有 score 仍按旧 3315f 时间线，裁头后全部 cue 需 −60f（用户明确暂不对轨），并入 D46 的音频 pass。
 - **测量**：预览 `out/qa/S05-glass-preview.mp4`（480f / 16.000s / 1920×1080 / 30fps，裁 2s + 8 秒爬坡 + 落定即爆版）；静帧 `out/qa/S05glass-f{0015,0045,0060,0120,0240,0300,0360,0479}.png`（0015=1、0060 落定、0120 起涨、0240=288、0300=596、0360=999 + 起爆、0479=999 末帧）；翻牌 `out/qa/S05glass-flip-f0187.png`（187f=101 requests + `99+`）；备份 `out/qa/S05BeatCut-check-f0155.png`；`npx remotion compositions` 显示 S05 480f、S05BeatCut 540f、ProductPromo 3255f；`npm run typecheck` 通过。
 - **确认人**：用户提出“一秒破千 / 抽出来放大 / 悬浮 / 背景毛玻璃”四项要求；随后更正落点 **1→999（不是 1→3,500）**、时长 **8 秒（“一秒破千”是夸张说法）**、**涨到 999 的同一帧立刻起爆**、**S05 开头裁掉两秒且不用管 BGM 对轨**（均 2026-10-29）。计数曲线、预览/静帧已重渲，文档同步。4× 放大、卡片几何、数字锚点与备份方式由 Agent 确定。
+
+### D52 S03/S04 表现升级：row-embed / scroll-brake-moves / research-card-stack-scroll / chip-grid 单选落定
+
+- **决定**：用户 2026-10-29 指令「S03 和 S04 幕的表现方式，查 video-shotcraft 库，尽情使用来提升观感」。在不改三个音频锚点（S03 本体 64 / 394，S04 416）与两场时长（510 / 464）的前提下，换掉两场的运动语法：
+  1. **S03 行瀑 → row-embed**（pin `43bd349`，`demos/ui-entrance/row-embed/RowEmbed.tsx`）：18 行落点 76–112（原 68–106），每行提前 10f 从槽位上方 120px、`perspective(900px) rotateX(16°)` 落下（bezier(.5,0,.8,.75)，末段仍带速度），scale 1.06→0.995→1，落定后 4f press 回弹；飞行行自带 `windowBg` 底片 + 接触阴影，落地 2f 内淡出，避免与上一行文字重影。
+  2. **S03 滚动 → scroll-brake-moves A 式**（`demos/data/scroll-brake-moves/ChangelogScrollBrake.tsx`）：156–218 `sin-in` 冲刺（2536.5px）→ 218–246 `outCubic` 减速并超调 34px → 246–254 `outQuad` 回弹到 3056.5px；纵向模糊由相邻帧位移差分驱动（v×0.1，封顶 2.4px），停稳归零；滚动条进度钳制 1；crane 起点 232→240。
+  3. **S04 提示流 → research-card-stack-scroll 读法**（`demos/ui-entrance/research-card-stack-scroll/ResearchCardStackScroll.tsx`）：每条 6f 从 −40px 落位、落定后 1 帧 `scaleY 0.97`；清晰度按堆叠深度递减（blur 0→1.1px、brightness 1→0.93，7 个节距到 1），最新一条始终最清晰；原有加速弹出与插入/下移曲线不动。
+  4. **S04 选中 → chip-grid-single-select-blackout 改编**（`demos/interaction/chip-grid-single-select-blackout/ChipGridSingleSelectBlackout.tsx`）：点击后 26f 内 1→1.035→1 回弹 + 卡片下方蓝色落地光 + 投影加深，442f 前回到与 S05 首帧完全一致的选中态；光标 442–456f 淡出，修掉切 S05 时的指针跳变。
+- **理由**：四张卡分别对上两场的真实语义——表格行“长进槽位”、长列表“扫完急刹”、90 条提示“向纵深退去的流”、单选“一次决定”。保留三个点击帧是因为 `score.py` 的 click/pluck cue 钉在 609 / 939 / 1447，改锚点会牵动整条配乐；本轮改动全在锚点之间，音频零改动。
+- **与参考的差异（不静默）**：
+  1. row-embed 原卡飞行体是整页截图裁片；本片行是 live DOM，只借“空中 rotateX 收平 + press 回弹”的语法，补片改为飞行行自带底片。原卡的空槽补丁 / 虚线槽位框未用（表格自带行线与表头，再加会读成第二套 UI）；强调色缝在密排加速段会被下一行飞行体遮挡，整体弃用。
+  2. 原卡 5 行、cue 12–46f；本片 18 行、落点 76–112f、飞行 10f，加速排程保留。
+  3. scroll-brake 原卡在页面级长卷做 38/9/4f；本片在 3.6× 窗口、100f 预算内改为 62/28/8f。停点行抬升、其余行压暗 0.38、角标锁定（B 式）未用：本场停点是列表底，不是某条配置，压暗会与“90 条全选”冲突。
+  4. research-card-stack-scroll 的斜向漂移、背景 grid、深色卡面未用；保持真实 UI 的等宽直列，只取入场 / 压缩 / 深度清晰度。深度上限刻意压到 blur 1.1px、brightness 0.93，保证 10 条同屏仍能读 IP。
+  5. chip-grid 的 1 帧灰闪、反黑、其余项降到 18% 未用：S04 收尾必须与 S05 首帧一致，压暗/反黑会在 1495f 硬切处回弹；只取回弹、落地光与投影加深，并在 442f 前回落。
+- **影响**：`MainArea` 新增 `rowMotion` / `rowBlur`（默认关闭）；`TolinkDesktop` 透传；`ConnectionPanel.ToastFeedItem` 新增 `entry` / `squash` / `depth`；`ConnectionDesktop` 新增 `cardLift`，`ProfileCard` 新增 `lift`（默认 0）；`S03.tsx` / `S04.tsx` 的时间表见 design-spec §10 / §10.1 / §12.4 / §12.6；`timeline.ts` 的 S03/S04 验收帧同步。两场时长、`S03→S04→S05` 接缝与全片 3255f 均未改。
+- **测量**：
+  - `npm run typecheck` 通过；`npx remotion compositions` → `ProductPromo 3255 / 108.50s`、`S03 510 / 17.00s`、`S04 464 / 15.47s`。
+  - 预览：`out/qa/S03-v4-preview.mp4`（510f / 17.000s / 6.70MB）、`out/qa/S04-v2-preview.mp4`（464f / 15.467s / 2.63MB）。
+  - 静帧：`S03v4-b088.png` + `S03v4-b088z.png`（飞行行底片/接触影）、`S03v4-prev-f{112,124,242,258,270}.png`（行雨 → 冲刺模糊 → 急刹变清）、`S04v2-prev-f{100,190,215,430,456,463}.png`（1× 叠压初段 / 1.55× 纵深 / 回弹峰值 / 指针已淡出）。
+  - 静态基准回归：`S03-static-v2-f0.png` / `S04-static-v2-f0.png` 与既有 `S03-static-f0.png` / `S04-static-f0.png` 逐像素比较，差异仅 927 个像素、bbox (1,77)–(112,115)——两帧同一位置，即 D41 换牌后的标题栏；其余区域逐通道一致。默认参数没有改动静态基准。
+  - 目检：S03 f112（本体 88）飞行行带底片压过上一行、无重影；f242（本体 218）整列糊成色带；f270（本体 246）急刹后变清；S04 f215 顶部清晰、底部按深度退远；f456 指针已淡出、选中卡与 S05 首帧一致。
+- **确认人**：用户 2026-10-29 指令；卡选型、参数与回落由 Agent 确定。

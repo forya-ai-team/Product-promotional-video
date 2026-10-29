@@ -96,6 +96,12 @@ export type ToastFeedItem = {
   top: number;
   reveal: number;
   pop: number;
+  /** 0 = still dropping in, 1 = seated (research-card-stack-scroll). */
+  entry?: number;
+  /** 1-frame landing compression. */
+  squash?: number;
+  /** 0 = newest and sharp, 1 = deepest in the stack. */
+  depth?: number;
 };
 
 export const ToastFeed: FC<{ items: ToastFeedItem[]; backingOpacity?: number; cardFade?: number }> = ({
@@ -121,20 +127,29 @@ export const ToastFeed: FC<{ items: ToastFeedItem[]; backingOpacity?: number; ca
         opacity: backingOpacity,
       }}
     />
-    {items.map((item) => (
-      <ProxyToastCard
-        key={item.key}
-        toast={item.toast}
-        checkPop={item.pop}
-        style={{
-          left: 10,
-          top: item.top,
-          opacity: item.reveal * cardFade,
-          transform: `scale(${0.98 + 0.02 * item.reveal})`,
-          transformOrigin: '50% 0%',
-        }}
-      />
-    ))}
+    {items.map((item) => {
+      const entry = item.entry ?? 1;
+      const scale = 0.94 + 0.06 * entry;
+      const depth = item.depth ?? 0;
+      return (
+        <ProxyToastCard
+          key={item.key}
+          toast={item.toast}
+          checkPop={item.pop}
+          style={{
+            left: 10,
+            top: item.top,
+            opacity: item.reveal * cardFade,
+            transform: `translateY(${((1 - entry) * -40).toFixed(2)}px) scale(${scale.toFixed(4)}, ${(scale * (item.squash ?? 1)).toFixed(4)})`,
+            transformOrigin: '50% 0%',
+            filter:
+              depth > 0.004
+                ? `blur(${(1.1 * depth).toFixed(2)}px) brightness(${(1 - 0.07 * depth).toFixed(3)})`
+                : undefined,
+          }}
+        />
+      );
+    })}
   </div>
 );
 

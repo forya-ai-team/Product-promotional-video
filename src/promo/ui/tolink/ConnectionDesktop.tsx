@@ -41,6 +41,7 @@ type ConnectionDesktopProps = {
   mainPanel?: ReactNode;
   cardState?: (index: number) => CardVisualState;
   cardReveal?: (index: number) => number;
+  cardLift?: (index: number) => number;
   statusGlow?: (index: number) => number;
   textReveal?: number;
   spinnerAngle?: number;
@@ -54,6 +55,7 @@ export const ConnectionDesktop: FC<ConnectionDesktopProps> = ({
   mainPanel,
   cardState = referenceCardState,
   cardReveal = alwaysOne,
+  cardLift = alwaysZero,
   statusGlow = alwaysZero,
   textReveal = 1,
   spinnerAngle = 0,
@@ -87,6 +89,7 @@ export const ConnectionDesktop: FC<ConnectionDesktopProps> = ({
         {profiles.map((profile, index) => {
           const reveal = cardReveal(index);
           const state = cardState(index);
+          const lift = cardLift(index);
           return (
             <div
               key={profile.name}
@@ -96,15 +99,31 @@ export const ConnectionDesktop: FC<ConnectionDesktopProps> = ({
                 top: index * CARD_PITCH,
                 width: CARD_WIDTH,
                 opacity: reveal,
-                transform: `translateY(${(1 - reveal) * -16}px) scale(${1 - 0.008 * state.press})`,
+                transform: `translateY(${(1 - reveal) * -16}px) scale(${1 - 0.008 * state.press + 0.035 * lift})`,
               }}
             >
+              {lift > 0.001 ? (
+                <div
+                  style={{
+                    position: 'absolute',
+                    left: -14,
+                    right: -14,
+                    top: 58,
+                    bottom: -12,
+                    background:
+                      'radial-gradient(ellipse 58% 46% at 50% 100%, rgba(58,87,219,0.30) 0%, rgba(58,87,219,0) 72%)',
+                    filter: 'blur(6px)',
+                    opacity: lift,
+                  }}
+                />
+              ) : null}
               <ProfileCard
                 profile={profile}
                 width={CARD_WIDTH}
                 selectProgress={state.select}
                 hover={state.hover}
                 statusGlow={statusGlow(index)}
+                lift={lift}
               />
             </div>
           );

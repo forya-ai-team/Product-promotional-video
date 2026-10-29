@@ -1,8 +1,8 @@
 import type { FC, ReactNode } from 'react';
-import { AbsoluteFill, Easing, useCurrentFrame } from 'remotion';
+import { AbsoluteFill, Easing, interpolate, useCurrentFrame } from 'remotion';
 import { BigCursor } from '../ui/tolink/BigCursor';
 import { CONFIG_ROWS } from '../ui/tolink/data';
-import { LAUNCH_BUTTON_CENTER } from '../ui/tolink/MainArea';
+import { LAUNCH_BUTTON_CENTER, type RowMotion } from '../ui/tolink/MainArea';
 import { Stage } from '../ui/tolink/Stage';
 import { TolinkDesktop } from '../ui/tolink/TolinkDesktop';
 import { tol } from '../ui/tolink/tokens';
@@ -20,9 +20,17 @@ const RIPPLE_DURATION = 44;
 const PUSH_START = 88;
 const PUSH_END = 132;
 const HOLD_END = 156;
+// scroll-brake-moves A: sprint with sin-in, overshoot 34px past the end, then
+// eight frames of rebound. The end offset is unchanged.
 const SCROLL_START = 156;
-const SCROLL_END = 256;
-const CRANE_START = 232;
+const SCROLL_SPRINT_END = 218;
+const SCROLL_BRAKE_END = 246;
+const SCROLL_SETTLE_END = 254;
+const SCROLL_SHORTFALL = 520;
+const SCROLL_OVERSHOOT = 34;
+// The crane starts six frames before the overshoot peak, so the pull-out
+// begins while the list is still decelerating and reads as its reaction.
+const CRANE_START = 240;
 const CRANE_END = 322;
 
 // The pointer waits for the crane to settle, then crosses the window to the
@@ -118,20 +126,75 @@ const cameraAt = (frame: number) => {
   };
 };
 
-const ROW_TOP = (i: number) => WINDOW_TOP + 163.5 + i * 42.5;
-
-// 18 rows are inside the viewport; their cascade accelerates as it travels down.
+// 18 rows are inside the viewport; their landing schedule accelerates as it
+// travels down. Each row is in the air for 10f before it lands (row-embed).
 const VISIBLE_ROWS = 18;
-const LOAD_START = 68;
-const LOAD_SPAN = 38;
-const rowRevealStart = (index: number) =>
+const LOAD_START = 76;
+const LOAD_SPAN = 36;
+const ROW_FLIGHT = 10;
+const ROW_FLY_EASE = Easing.bezier(0.5, 0, 0.8, 0.75);
+
+const rowLandAt = (index: number) =>
   LOAD_START +
   LOAD_SPAN * (1 - Math.pow(1 - Math.min(1, index / (VISIBLE_ROWS - 1)), 2.2));
 
-const revealAt = (frame: number) => (index: number) => {
-  if (index >= VISIBLE_ROWS) return frame >= LOAD_START + LOAD_SPAN + 8 ? 1 : 0;
-  const start = rowRevealStart(index);
-  return Easing.out(Easing.cubic)(clamp01((frame - start) / 7));
+const rowAirAt = (frame: number, index: number) => {
+  if (index >= VISIBLE_ROWS) return 0;
+  const start = rowLandAt(index) - ROW_FLIGHT;
+  return 1 - ROW_FLY_EASE(clamp01((frame - start) / ROW_FLIGHT));
+};
+
+const rowMotionAt = (frame: number) => (index: number): RowMotion => {
+  if (index >= VISIBLE_ROWS) {
+    return {
+      reveal: frame >= LOAD_START + LOAD_SPAN + 8 ? 1 : 0,
+      air: 0,
+      settle: 1,
+      blur: 0,
+    };
+  }
+
+  const land = rowLandAt(index);
+  const start = land - ROW_FLIGHT;
+  const age = frame - land;
+  const air = rowAirAt(frame, index);
+  const reveal = Easing.out(Easing.cubic)(clamp01((frame - start) / 4));
+  const settle = Easing.out(Easing.quad)(clamp01(age / 4));
+  const velocity = rowAirAt(frame - 0.5, index) - rowAirAt(frame + 0.5, index);
+  const blur = age < 0 ? Math.min(1.2, 120 * velocity * 0.1) : 0;
+
+  return { reveal, air, settle, blur };
+};
+
+const TABLE_BODY_HEIGHT =
+  tol.layout.height - tol.layout.tableTop - tol.layout.headerHeight;
+const MAX_SCROLL = 90 * tol.layout.rowHeight - TABLE_BODY_HEIGHT;
+
+const scrollAt = (frame: number) => {
+  const clamp = { extrapolateLeft: 'clamp', extrapolateRight: 'clamp' } as const;
+  if (frame <= SCROLL_START) return 0;
+  if (frame <= SCROLL_SPRINT_END) {
+    return interpolate(
+      frame,
+      [SCROLL_START, SCROLL_SPRINT_END],
+      [0, MAX_SCROLL - SCROLL_SHORTFALL],
+      { ...clamp, easing: Easing.in(Easing.sin) },
+    );
+  }
+  if (frame <= SCROLL_BRAKE_END) {
+    return interpolate(
+      frame,
+      [SCROLL_SPRINT_END, SCROLL_BRAKE_END],
+      [MAX_SCROLL - SCROLL_SHORTFALL, MAX_SCROLL + SCROLL_OVERSHOOT],
+      { ...clamp, easing: Easing.out(Easing.cubic) },
+    );
+  }
+  return interpolate(
+    frame,
+    [SCROLL_BRAKE_END, SCROLL_SETTLE_END],
+    [MAX_SCROLL + SCROLL_OVERSHOOT, MAX_SCROLL],
+    { ...clamp, easing: Easing.out(Easing.quad) },
+  );
 };
 
 const AppClip: FC<{ children: ReactNode; zIndex: number }> = ({ children, zIndex }) => (
@@ -248,18 +311,18 @@ export const S03: FC = () => {
   const glow = hoverAt(frame, cursor, CARD, CLICK_FRAME);
   const launchGlow = hoverAt(frame, cursor, LAUNCH, CLICK2_FRAME);
 
-  const scrollP = Easing.inOut(Easing.cubic)(
-    clamp01((frame - SCROLL_START) / (SCROLL_END - SCROLL_START)),
-  );
-  const maxScroll = 90 * 42.5 - (tol.layout.height - tol.layout.tableTop - tol.layout.headerHeight);
-  const scrollOffset = maxScroll * scrollP;
-  const scrollProgress = scrollP;
+  const scrollOffset = scrollAt(frame);
+  const scrollProgress = Math.min(1, scrollOffset / MAX_SCROLL);
+  const scrollVelocity = scrollOffset - scrollAt(frame - 1);
+  const rowBlur = Math.min(2.4, Math.abs(scrollVelocity) * 0.1);
+  const rowMotion = rowMotionAt(frame);
+  // The row wash hands over to the brake at 246 so the landed bottom rows are
+  // clean when the crane reveals them.
   const rowGlow =
-    0.75 * clamp01((frame - 150) / 12) * (1 - clamp01((frame - 248) / 26));
+    0.75 * clamp01((frame - 150) / 12) * (1 - clamp01((frame - 246) / 16));
   const count = Math.round(90 * Math.pow(clamp01((frame - LOAD_START) / LOAD_SPAN), 1.5));
   const headerChecked = frame >= 112;
   const scrollbarOpacity = Easing.out(Easing.cubic)(clamp01((frame - 104) / 18));
-  const reveal = revealAt(frame);
 
   return (
     <Stage>
@@ -276,7 +339,8 @@ export const S03: FC = () => {
           <TolinkDesktop
             cardFeedback={{ glow, press }}
             rows={CONFIG_ROWS}
-            rowReveal={reveal}
+            rowMotion={rowMotion}
+            rowBlur={rowBlur}
             scrollOffset={scrollOffset}
             scrollProgress={scrollProgress}
             rowGlow={rowGlow}

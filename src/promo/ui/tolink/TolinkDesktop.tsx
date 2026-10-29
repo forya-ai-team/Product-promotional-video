@@ -1,7 +1,7 @@
 import type { FC, ReactNode } from 'react';
 import type { ConfigRow } from './data';
 import { CursorGlyph } from './glyphs';
-import { MainArea } from './MainArea';
+import { MainArea, type RowMotion } from './MainArea';
 import { RightRail } from './RightRail';
 import { Sidebar, type CardFeedback } from './Sidebar';
 import { TitleBar } from './TitleBar';
@@ -12,6 +12,8 @@ type TolinkDesktopProps = {
   cardFeedback?: CardFeedback;
   rows?: ConfigRow[];
   rowReveal?: (index: number) => number;
+  rowMotion?: (index: number) => RowMotion;
+  rowBlur?: number;
   scrollOffset?: number;
   scrollProgress?: number;
   rowGlow?: number;
@@ -28,6 +30,8 @@ export const TolinkDesktop: FC<TolinkDesktopProps> = ({
   cardFeedback,
   rows,
   rowReveal,
+  rowMotion,
+  rowBlur,
   scrollOffset,
   scrollProgress,
   rowGlow,
@@ -55,6 +59,8 @@ export const TolinkDesktop: FC<TolinkDesktopProps> = ({
     <MainArea
       rows={rows}
       rowReveal={rowReveal}
+      rowMotion={rowMotion}
+      rowBlur={rowBlur}
       scrollOffset={scrollOffset}
       scrollProgress={scrollProgress}
       rowGlow={rowGlow}

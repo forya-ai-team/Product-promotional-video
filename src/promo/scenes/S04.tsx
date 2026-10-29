@@ -83,12 +83,16 @@ const buildFeed = (frame: number): ToastFeedItem[] => {
     const top = (scroll - 1 - index) * TOAST_PITCH;
     if (top > 900) continue;
     const age = frame - POP_FRAMES[index];
+    const landAge = age - SHIFT_FADE;
     items.push({
       key: `${index}-${PROXY_FEED[index].ip}`,
       toast: PROXY_FEED[index],
       top,
       reveal: enterEase(clamp01(age / ENTRY_FADE)),
       pop: checkEase(clamp01(age / ENTRY_FADE)),
+      entry: Easing.out(Easing.cubic)(clamp01(age / 6)),
+      squash: landAge >= 0 && landAge < 1.6 ? 0.97 : 1,
+      depth: Math.min(1, Math.max(0, top) / (TOAST_PITCH * 7)),
     });
   }
   return items;
@@ -211,6 +215,10 @@ export const S04: FC = () => {
   const select = enterEase(
     clamp01((frame - CLICK_FRAME) / (SELECT_END - CLICK_FRAME)),
   );
+  // Chip-grid "one decision": a single 1.035 rebound + landing glow, settled
+  // back to the exact S05 selected card before the cut.
+  const lift = Math.sin(Math.PI * clamp01((frame - CLICK_FRAME) / 26));
+  const cursorFade = 1 - clamp01((frame - 442) / 14);
 
   const cardState = (index: number): CardVisualState =>
     index === 0
@@ -239,13 +247,20 @@ export const S04: FC = () => {
             }
             cardState={cardState}
             cardReveal={cardReveal}
+            cardLift={(index) => (index === 0 ? lift : 0)}
             statusGlow={statusGlow}
             textReveal={textReveal}
             spinnerAngle={frame * 7}
             overlay={
               <>
                 <CardRipple frame={frame} />
-                <div style={{ position: 'absolute', inset: 0, opacity: cursorOpacity }}>
+                <div
+                  style={{
+                    position: 'absolute',
+                    inset: 0,
+                    opacity: cursorOpacity * cursorFade,
+                  }}
+                >
                   <BigCursor
                     x={cursor.x}
                     y={cursor.y}

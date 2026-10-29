@@ -36,6 +36,8 @@ type ProfileCardProps = {
   selectProgress?: number;
   hover?: number;
   statusGlow?: number;
+  /** Transient landing pulse; 0 leaves the approved selected card untouched. */
+  lift?: number;
 };
 
 export const ProfileCard: FC<ProfileCardProps> = ({
@@ -44,6 +46,7 @@ export const ProfileCard: FC<ProfileCardProps> = ({
   selectProgress = 0,
   hover = 0,
   statusGlow = 0,
+  lift = 0,
 }) => {
   const select = clamp01(selectProgress);
   const hoverP = clamp01(hover);
@@ -72,6 +75,9 @@ export const ProfileCard: FC<ProfileCardProps> = ({
           `0 2px 6px rgba(20, 30, 60, ${0.04 + 0.04 * select})`,
           select > 0.001 ? `0 4px 14px rgba(58, 87, 219, ${0.12 * select})` : null,
           hoverP > 0.001 ? `0 4px 16px rgba(58, 87, 219, ${0.16 * hoverP})` : null,
+          lift > 0.001
+            ? `0 ${(6 + 14 * lift).toFixed(2)}px ${(16 + 20 * lift).toFixed(2)}px rgba(58, 87, 219, ${(0.20 * lift).toFixed(3)})`
+            : null,
         ]
           .filter(Boolean)
           .join(', '),

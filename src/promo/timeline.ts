@@ -64,9 +64,18 @@ export const SCENES: SceneSpec[] = [
     durationInFrames: S03_DURATION,
     transitionAfter: { kind: 'cut', durationInFrames: 0 },
     cards: ['crane-rise-reveal'],
-    // Body frame + S03_LEAD: 150f crane hold, 394f batch-launch click,
-    // 458f ripple done, 485f settled.
-    acceptanceFrames: [150 + S03_LEAD, 394 + S03_LEAD, 458 + S03_LEAD, S03_DURATION - 1],
+    // Body frame + S03_LEAD: 76f first row embed, 112f last row, 150f crane
+    // hold, 246f brake overshoot, 394f batch-launch click, 458f ripple done,
+    // 485f settled.
+    acceptanceFrames: [
+      76 + S03_LEAD,
+      112 + S03_LEAD,
+      150 + S03_LEAD,
+      246 + S03_LEAD,
+      394 + S03_LEAD,
+      458 + S03_LEAD,
+      S03_DURATION - 1,
+    ],
   },
   {
     id: 'S04',
@@ -74,7 +83,9 @@ export const SCENES: SceneSpec[] = [
     durationInFrames: S04_DURATION,
     transitionAfter: { kind: 'cut', durationInFrames: 0 },
     cards: [],
-    acceptanceFrames: [sec(5), sec(10), 417, S04_DURATION - 1],
+    // 190f 1.55× depth stack / 417f select begins / 430f rebound peak /
+    // 456f cursor gone / last frame settled
+    acceptanceFrames: [sec(5), sec(10), 190, 417, 430, 456, S04_DURATION - 1],
   },
   {
     id: 'S05',
