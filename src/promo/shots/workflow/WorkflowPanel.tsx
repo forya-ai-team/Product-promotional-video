@@ -3,14 +3,21 @@ import { EASE, alpha } from '../spotlightHeroCard/polish';
 import { EDGES, NODES, WORLD } from './workflowData';
 import { FAN_B, LEAD_END, LEAD_START, NOTIFY_AT, NOTIFY_NODE, PANEL, cameraAt, nodeTop, pointOn, stateAt, worldToPanel } from './plan';
 
-const GREEN = '#3DDC97';
-const ORANGE = '#F5A03B';
+const GREEN = '#20A97A';
+const ORANGE = '#F08A28';
 const GOLD = '#E4C58A';
-const CYAN = '#8FD8FF';
-const LABEL = '#D3D8E0';
-const DOT = '#39404B';
+const GOLD_INK = '#BE8F3D';
+const CYAN = '#2E9CCB';
+const LABEL = '#48515E';
+const DOT = '#D2D9E2';
 
 const ramp = (f: number, from: number, len: number) => EASE.out(Math.min(1, Math.max(0, (f - from) / len)));
+
+// Node glyph colors were picked against dark tiles; darken them for the light-blue card.
+const ink = (hex: string, k = 0.74) => {
+  const v = parseInt(hex.slice(1), 16);
+  return `#${[16, 8, 0].map((s) => Math.round(((v >> s) & 255) * k).toString(16).padStart(2, '0')).join('')}`;
+};
 
 type Callout = { from: number; to: number; text: string; node?: string; panel?: { x: number; y: number }; dy?: number };
 
@@ -20,6 +27,19 @@ const CALLOUTS: Callout[] = [
   { from: LEAD_START + 74, to: FAN_B, panel: { x: 22, y: 78 }, text: '6 路分支并行' },
   { from: FAN_B + 5, to: LEAD_END - 3, node: '分析卡片发送', dy: -70, text: '推送 Lark 机器人' },
 ];
+
+// A few dense spots collide once the label type grows (same-row neighbours sit
+// as close as 128 world units, and deepseek's label runs into the card below);
+// these labels step aside instead of shrinking the type.
+const LABEL_SHIFT: Record<string, number> = {
+  '意图解析 (Code)': -9,
+  '会话阶段处理': 9,
+  '记录会话运行日志': -12,
+  '计算用户连续重复发消息数量': 12,
+  'Check if a user is registered': -14,
+  'Format Query Results': 14,
+  'deepseek-v4-flash7': 90,
+};
 
 type Props = { frame: number; open: number; content: number };
 
@@ -40,8 +60,8 @@ export const WorkflowPanel: FC<Props> = ({ frame, open, content }) => {
         height: PANEL.h,
         borderRadius: PANEL.r,
         overflow: 'hidden',
-        background: 'radial-gradient(78% 62% at 56% 42%, #171C24 0%, #0F1318 58%, #0B0E12 100%)',
-        border: '1px solid rgba(255,255,255,0.10)',
+        background: 'radial-gradient(78% 62% at 56% 42%, #FFFFFF 0%, #F7F9FC 58%, #EDF2F7 100%)',
+        border: '1px solid rgba(15,23,42,0.12)',
         boxShadow: '-30px 46px 110px rgba(0,0,0,0.55), 0 0 0 1px rgba(228,197,138,0.10)',
         transform: 'translateZ(2px)',
       }}
@@ -85,7 +105,7 @@ export const WorkflowPanel: FC<Props> = ({ frame, open, content }) => {
             const glow = st.afterglow.get(key) ?? 0;
             const visited = st.visited.has(key);
             const ai = e.kind !== 'main';
-            const color = flowing ? GREEN : glow > 0 ? alpha(GREEN, 0.35 + 0.45 * glow) : visited ? '#2F8F6B' : ai ? '#333A45' : '#434B57';
+            const color = flowing ? GREEN : glow > 0 ? alpha(GREEN, 0.35 + 0.45 * glow) : visited ? '#35A57F' : ai ? '#CBD2DB' : '#AFBAC7';
             return (
               <path
                 key={key}
@@ -103,7 +123,7 @@ export const WorkflowPanel: FC<Props> = ({ frame, open, content }) => {
           })}
           {[...st.flow.values()].map(({ s, progress }) => {
             const pt = pointOn(s.e.p, progress);
-            const tone = s.tone === 'lead' ? ORANGE : GOLD;
+            const tone = s.tone === 'lead' ? ORANGE : GOLD_INK;
             const r = (s.e.kind === 'main' ? 7.4 : 5.6) / z;
             const prev = pointOn(s.e.p, Math.max(0, progress - 0.07));
             return (
@@ -136,6 +156,29 @@ export const WorkflowPanel: FC<Props> = ({ frame, open, content }) => {
           })}
         </svg>
 
+        {NODES.map((n) => (
+          <div
+            key={`label-${n.name}`}
+            style={{
+              position: 'absolute',
+              left: n.x + n.w / 2 + (LABEL_SHIFT[n.name] ?? 0),
+              top: n.y + n.h + 7,
+              transform: 'translateX(-50%)',
+              width: 230,
+              textAlign: 'center',
+              fontSize: 20.5,
+              lineHeight: '24px',
+              color: LABEL,
+              whiteSpace: 'nowrap',
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+              opacity: 0.92,
+            }}
+          >
+            {n.name}
+          </div>
+        ))}
+
         {NODES.map((n) => {
           const active = st.activeNodes.has(n.name);
           const visited = st.visitedNodes.has(n.name);
@@ -156,13 +199,13 @@ export const WorkflowPanel: FC<Props> = ({ frame, open, content }) => {
                 alignItems: 'center',
                 justifyContent: 'center',
                 gap: 8,
-                background: active ? '#13291F' : '#1E222A',
+                background: active ? '#D5E9FF' : '#E7F1FD',
                 border: `${(active ? 2.2 : 1.6) / z}px solid ${
-                  active ? GREEN : visited ? '#2F8F6B' : '#4B525C'
+                  active ? GREEN : visited ? '#35A57F' : '#A9C4E4'
                 }`,
                 boxShadow: active
                   ? `0 0 0 ${(7 + pulse * 6) / z}px ${alpha(GREEN, 0.12)}, 0 0 ${(26 + pulse * 18) / z}px ${alpha(GREEN, 0.34)}`
-                  : `0 ${7 / z}px ${16 / z}px rgba(0,0,0,0.34)`,
+                  : `0 ${7 / z}px ${16 / z}px rgba(23,48,84,0.14)`,
                 opacity: n.disabled ? 0.45 : 1,
               }}
             >
@@ -170,7 +213,7 @@ export const WorkflowPanel: FC<Props> = ({ frame, open, content }) => {
                 style={{
                   fontSize: n.kind === 'agent' ? 24 : 27,
                   lineHeight: 1,
-                  color: active ? '#EFFBF4' : n.color,
+                  color: active ? '#0F4A33' : ink(n.color),
                   fontWeight: 600,
                 }}
               >
@@ -179,10 +222,10 @@ export const WorkflowPanel: FC<Props> = ({ frame, open, content }) => {
               {n.kind === 'agent' ? (
                 <span
                   style={{
-                    fontSize: 12,
+                    fontSize: 20,
                     lineHeight: 1.25,
-                    color: active ? '#EFFBF4' : '#C3C8D0',
-                    maxWidth: 140,
+                    color: active ? '#0F4A33' : '#3D4C63',
+                    maxWidth: 150,
                   }}
                 >
                   {n.name}
@@ -191,29 +234,6 @@ export const WorkflowPanel: FC<Props> = ({ frame, open, content }) => {
             </div>
           );
         })}
-
-        {NODES.map((n) => (
-          <div
-            key={`label-${n.name}`}
-            style={{
-              position: 'absolute',
-              left: n.x + n.w / 2,
-              top: n.y + n.h + 7,
-              transform: 'translateX(-50%)',
-              width: 196,
-              textAlign: 'center',
-              fontSize: 12.5,
-              lineHeight: '15px',
-              color: LABEL,
-              whiteSpace: 'nowrap',
-              overflow: 'hidden',
-              textOverflow: 'ellipsis',
-              opacity: 0.85,
-            }}
-          >
-            {n.name}
-          </div>
-        ))}
       </div>
 
       <div
@@ -222,7 +242,7 @@ export const WorkflowPanel: FC<Props> = ({ frame, open, content }) => {
           inset: 0,
           pointerEvents: 'none',
           background:
-            'radial-gradient(ellipse 80% 80% at 50% 45%, rgba(0,0,0,0) 55%, rgba(0,0,0,0.42) 100%)',
+            'radial-gradient(ellipse 80% 80% at 50% 45%, rgba(15,23,42,0) 55%, rgba(15,23,42,0.07) 100%)',
         }}
       />
 
@@ -276,7 +296,7 @@ export const WorkflowPanel: FC<Props> = ({ frame, open, content }) => {
               cy={p.y}
               r={r}
               fill="none"
-              stroke={alpha(GOLD, 0.8 * (1 - age / 18))}
+              stroke={alpha(GOLD_INK, 0.85 * (1 - age / 18))}
               strokeWidth={2.4}
             />
           );
@@ -290,9 +310,9 @@ export const WorkflowPanel: FC<Props> = ({ frame, open, content }) => {
           bottom: 16,
           padding: 7,
           borderRadius: 10,
-          background: 'rgba(7,9,12,0.82)',
-          border: '1px solid rgba(255,255,255,0.12)',
-          boxShadow: '0 8px 24px rgba(0,0,0,0.4)',
+          background: 'rgba(255,255,255,0.9)',
+          border: '1px solid rgba(15,23,42,0.12)',
+          boxShadow: '0 8px 24px rgba(15,23,42,0.16)',
         }}
       >
         <svg width={190} height={72}>
@@ -300,7 +320,7 @@ export const WorkflowPanel: FC<Props> = ({ frame, open, content }) => {
             <rect width={190} height={72} rx={4} />
           </clipPath>
           <g clipPath="url(#wf-mini)">
-            <rect width={190} height={72} fill="rgba(255,255,255,0.03)" />
+            <rect width={190} height={72} fill="rgba(15,23,42,0.04)" />
             {NODES.map((n) => (
               <circle
                 key={`mini-${n.name}`}
@@ -316,7 +336,7 @@ export const WorkflowPanel: FC<Props> = ({ frame, open, content }) => {
               width={(PANEL.w / cam.zoom) * (190 / WORLD.w)}
               height={(PANEL.h / cam.zoom) * (190 / WORLD.w)}
               fill="none"
-              stroke={alpha(GOLD, 0.75)}
+              stroke={alpha(GOLD_INK, 0.8)}
               strokeWidth={1}
             />
           </g>
@@ -330,11 +350,11 @@ export const WorkflowPanel: FC<Props> = ({ frame, open, content }) => {
           bottom: 16,
           padding: '7px 13px',
           borderRadius: 9,
-          background: 'rgba(7,9,12,0.78)',
-          border: '1px solid rgba(255,255,255,0.1)',
+          background: 'rgba(255,255,255,0.88)',
+          border: '1px solid rgba(15,23,42,0.1)',
           fontSize: 18,
           fontWeight: 500,
-          color: '#8D97A5',
+          color: '#6E7887',
           letterSpacing: '0.02em',
         }}
       >
@@ -352,7 +372,7 @@ export const WorkflowPanel: FC<Props> = ({ frame, open, content }) => {
           alignItems: 'center',
           gap: 10,
           padding: '0 20px',
-          background: 'linear-gradient(rgba(9,11,14,0.97) 52%, rgba(9,11,14,0))',
+          background: 'linear-gradient(rgba(255,255,255,1) 0%, rgba(255,255,255,0.96) 62%, rgba(255,255,255,0) 100%)',
         }}
       >
         <span
@@ -364,7 +384,7 @@ export const WorkflowPanel: FC<Props> = ({ frame, open, content }) => {
             boxShadow: running ? `0 0 12px ${GREEN}` : undefined,
           }}
         />
-        <span style={{ fontSize: 21, fontWeight: 600, color: '#E9EBEF', letterSpacing: '0.01em' }}>
+        <span style={{ fontSize: 21, fontWeight: 600, color: '#27303B', letterSpacing: '0.01em' }}>
           自动应答 · 工作流
         </span>
         <span
@@ -373,9 +393,9 @@ export const WorkflowPanel: FC<Props> = ({ frame, open, content }) => {
             padding: '5px 14px',
             borderRadius: 20,
             fontSize: 18,
-            color: frame >= NOTIFY_AT ? '#F0D9AE' : '#A7AEB8',
-            background: frame >= NOTIFY_AT ? 'rgba(228,197,138,0.12)' : 'rgba(255,255,255,0.05)',
-            border: `1px solid ${frame >= NOTIFY_AT ? 'rgba(228,197,138,0.4)' : 'rgba(255,255,255,0.10)'}`,
+            color: frame >= NOTIFY_AT ? '#8A6524' : '#6E7887',
+            background: frame >= NOTIFY_AT ? 'rgba(228,197,138,0.3)' : 'rgba(15,23,42,0.05)',
+            border: `1px solid ${frame >= NOTIFY_AT ? 'rgba(190,143,61,0.55)' : 'rgba(15,23,42,0.12)'}`,
           }}
         >
           {chip}

@@ -1,17 +1,29 @@
 import type { FC } from 'react';
 import { Easing, random, useCurrentFrame } from 'remotion';
 import { sec } from '../timeline';
+import { EASE, Grain } from '../shots/spotlightHeroCard/polish';
 import { ConnectionDesktop, type CardVisualState } from '../ui/tolink/ConnectionDesktop';
 import { Stage } from '../ui/tolink/Stage';
-import { TikTokMessages } from '../ui/tolink/TikTokMessages';
+import {
+  MessageRequestsRow,
+  REQUESTS_ROW_HEIGHT,
+  REQUESTS_ROW_WIDTH,
+  TikTokMessages,
+} from '../ui/tolink/TikTokMessages';
 
-// The untouched messages page holds for 3s so the viewer can read it before the
-// camera starts pushing; every animation constant below is relative to the end
-// of that hold.
-const STATIC_HOLD = sec(3);
-const ANIMATION_SPAN = 450;
+// 0–29 read the untouched page; at 30 the Message requests row is lifted out of
+// the list into a floating frosted-glass card (D51) while the page behind
+// defocuses into the glass. The count then climbs 1 → 999 across eight seconds
+// (120–360) and the burst fires on the very frame it lands (360).
+const STATIC_HOLD = sec(1); // 30
+const LAST_FRAME = 479;
 
 const OVERSCAN = 40;
+const LIFT_START = STATIC_HOLD; // 30
+const LIFT_END = LIFT_START + sec(1); // 60
+const GROWTH_START = LIFT_END + sec(2); // 120
+const GROWTH_END = GROWTH_START + sec(8); // 360
+const BURST_START = GROWTH_END; // 999 lands and bursts on the same frame
 
 const select241 = (index: number): CardVisualState =>
   index === 0 ? { select: 1, hover: 0, press: 0 } : { select: 0, hover: 0, press: 0 };
@@ -19,41 +31,57 @@ const select241 = (index: number): CardVisualState =>
 const clamp01 = (value: number) => Math.min(1, Math.max(0, value));
 const mix = (from: number, to: number, p: number) => from + (to - from) * p;
 
-// Slow push from the full desktop into the requests row, then a creep that
-// never settles while the counters run.
-const PUSH_START = 4;
-const PUSH_END = 120;
-const SCALE_FROM = 1;
-const SCALE_PUSH = 2.75;
-const SCALE_CREEP = 3;
-const FOCUS_FROM = { x: 960, y: 540 };
-const FOCUS_PUSH = { x: 660, y: 310 };
-const FOCUS_CREEP = { x: 660, y: 318 };
+// ── the floating card ─────────────────────────────────────────────────────
+const ROW_W = REQUESTS_ROW_WIDTH; // 401
+const ROW_H = REQUESTS_ROW_HEIGHT; // 72
+const ROW_ZOOM = 4;
+const PAD_X = 44;
+const PAD_Y = 54;
+const CONTENT_W = ROW_W * ROW_ZOOM; // 1604
+const CONTENT_H = ROW_H * ROW_ZOOM; // 288
+const CARD_W = CONTENT_W + PAD_X * 2; // 1692
+const CARD_H = CONTENT_H + PAD_Y * 2; // 396
+const CARD_CX = 960;
+const CARD_CY = 500;
+const CARD_LEFT = CARD_CX - CARD_W / 2;
+const CARD_TOP = CARD_CY - CARD_H / 2;
+// Message requests row in stage coordinates: page 280 + panel 238.5 + 200.5,
+// stageTop 74 + page 48 + panel 120.5 + row 122 + 36.
+const ROW_CX = 719;
+const ROW_CY = 400.5;
+// 0.25 of the 4x content == 1x, so the card starts exactly on the page row.
+const ENTRY_SCALE = ROW_W / CONTENT_W;
+const TILT = -1.6;
+// Centre of the count itself inside the card, relative to the card's centre:
+// "You have " is ~63px at 14.5px and a three-digit number ~30px, so the
+// number's centre sits at row x 85.5 + 63 + 15, row y 29 + 10. The burst fires
+// from the number, not from the badge — the number is the story here.
+const BURST_ANCHOR = {
+  x: -(CARD_W / 2 - (PAD_X + (85.5 + 63 + 15) * ROW_ZOOM)),
+  y: -(CARD_H / 2 - (PAD_Y + 39 * ROW_ZOOM)),
+};
 
-const COUNT_START = 24;
-// The last rendered shot frame is ANIMATION_SPAN - 1; ending the ramp there is
-// what puts REQUESTS_TO on screen instead of one increment short of it.
-const COUNT_END = ANIMATION_SPAN - 1;
-const REQUESTS_FROM = 1;
-const REQUESTS_TO = 999;
+const TAU = Math.PI * 2;
+
+// ── count: 1 → 999 across eight seconds, then hold the cap ───────────────
+// "One second" was shorthand for "very fast"; the climb now spans 8s so the
+// acceleration stays readable. 999 is the approved ceiling (header unread
+// follows at 0.812 → 811).
+const COUNT_FROM = 1;
+const COUNT_TO = 999;
+const GROWTH_EXP = 1.8;
 const UNREAD_RATIO = 203 / 250;
-const RATE_FROM = 0.2;
-const COUNT_SPAN = COUNT_END - COUNT_START;
-// The rate climbs from one increment every five frames to ~8.8 per frame;
-// integrating the cubic rate lands the final value on REQUESTS_TO.
-const RATE_TO = (4 * (REQUESTS_TO - REQUESTS_FROM)) / COUNT_SPAN - 3 * RATE_FROM;
 
-const pushEase = Easing.inOut(Easing.sin);
-const creepEase = Easing.in(Easing.quad);
+const countAt = (f: number) => {
+  if (f < GROWTH_START) return COUNT_FROM;
+  if (f < GROWTH_END) {
+    const p = clamp01((f - GROWTH_START) / (GROWTH_END - GROWTH_START));
+    return COUNT_FROM + (COUNT_TO - COUNT_FROM) * Math.pow(p, GROWTH_EXP);
+  }
+  return COUNT_TO;
+};
 
-// Burst sits just before the S05 -> S06 portal-wipe window (last 48f). The
-// camera drops into slow motion on the burst so the blast blooms while the
-// shake dies down.
-const BURST_START = 330;
-const SLOWMO_RAMP = 8;
-const SLOWMO_AMP = 0.12;
-const SLOWMO_PHASE = 0.22;
-const BURST_ORIGIN = { x: 871.5, y: 394 };
+// ── burst FX (same particle design as the beat-cut version, re-anchored) ──
 const SPARK_COLORS = ['#EE1357', '#FF3D6E', '#FF6E93', '#FFFFFF'];
 
 type Particle = {
@@ -66,99 +94,39 @@ type Particle = {
 };
 
 const SPARKS: Particle[] = Array.from({ length: 72 }, (_, index) => ({
-  angle: random(`s05-spark-angle-${index}`) * Math.PI * 2,
-  speed: 280 + random(`s05-spark-speed-${index}`) * 760,
-  delay: random(`s05-spark-delay-${index}`) * 10,
-  life: 46 + random(`s05-spark-life-${index}`) * 32,
-  width: 2 + random(`s05-spark-width-${index}`) * 2,
-  color: SPARK_COLORS[Math.floor(random(`s05-spark-color-${index}`) * SPARK_COLORS.length)],
+  angle: random(`s05g-spark-angle-${index}`) * Math.PI * 2,
+  speed: 280 + random(`s05g-spark-speed-${index}`) * 760,
+  delay: random(`s05g-spark-delay-${index}`) * 10,
+  life: 46 + random(`s05g-spark-life-${index}`) * 32,
+  width: 2 + random(`s05g-spark-width-${index}`) * 2,
+  color: SPARK_COLORS[Math.floor(random(`s05g-spark-color-${index}`) * SPARK_COLORS.length)],
 }));
 
-// Heavy comets carry the burst across the frame so the blast reads wide.
 const COMETS: Particle[] = Array.from({ length: 8 }, (_, index) => ({
-  angle: random(`s05-comet-angle-${index}`) * Math.PI * 2,
-  speed: 900 + random(`s05-comet-speed-${index}`) * 600,
-  delay: random(`s05-comet-delay-${index}`) * 2,
-  life: 30 + random(`s05-comet-life-${index}`) * 14,
-  width: 4.5 + random(`s05-comet-width-${index}`) * 2,
+  angle: random(`s05g-comet-angle-${index}`) * Math.PI * 2,
+  speed: 900 + random(`s05g-comet-speed-${index}`) * 600,
+  delay: random(`s05g-comet-delay-${index}`) * 2,
+  life: 30 + random(`s05g-comet-life-${index}`) * 14,
+  width: 4.5 + random(`s05g-comet-width-${index}`) * 2,
   color: index % 2 === 0 ? '#FFFFFF' : '#FF3D6E',
 }));
 
-// Slow embers keep a few sparks alive past the burst so the heat carries into
-// the portal-wipe instead of ending on a clean row.
 const EMBERS: Particle[] = Array.from({ length: 12 }, (_, index) => ({
-  angle: random(`s05-ember-angle-${index}`) * Math.PI * 2,
-  speed: 90 + random(`s05-ember-speed-${index}`) * 120,
-  delay: random(`s05-ember-delay-${index}`) * 4,
-  life: 80 + random(`s05-ember-life-${index}`) * 25,
-  width: 1.2 + random(`s05-ember-width-${index}`) * 1,
-  color: ['#EE1357', '#FF3D6E'][Math.floor(random(`s05-ember-color-${index}`) * 2)],
+  angle: random(`s05g-ember-angle-${index}`) * Math.PI * 2,
+  speed: 90 + random(`s05g-ember-speed-${index}`) * 120,
+  delay: random(`s05g-ember-delay-${index}`) * 4,
+  life: 80 + random(`s05g-ember-life-${index}`) * 25,
+  width: 1.2 + random(`s05g-ember-width-${index}`) * 1,
+  color: ['#EE1357', '#FF3D6E'][Math.floor(random(`s05g-ember-color-${index}`) * 2)],
 }));
 
-const requestsAt = (frame: number) => {
-  const p = clamp01((frame - COUNT_START) / COUNT_SPAN);
-  return (
-    REQUESTS_FROM +
-    RATE_FROM * COUNT_SPAN * p +
-    ((RATE_TO - RATE_FROM) * COUNT_SPAN * p ** 4) / 4
-  );
-};
-
-const rateAt = (frame: number) => requestsAt(frame) - requestsAt(frame - 1);
-
-// The buzz is meant to peak on the blast, not at the end of the count: after
-// the burst the slow motion owns the motion, so anything the counter gains
-// beyond this point is already damped away.
-const SHAKE_RATE_REF = rateAt(BURST_START);
-
-const cameraAt = (frame: number) => {
-  const push = pushEase(clamp01((frame - PUSH_START) / (PUSH_END - PUSH_START)));
-  const creep = creepEase(clamp01((frame - PUSH_END) / (COUNT_END - PUSH_END)));
-  const scale = frame < PUSH_END ? mix(SCALE_FROM, SCALE_PUSH, push) : mix(SCALE_PUSH, SCALE_CREEP, creep);
-  const focusX = mix(FOCUS_FROM.x, FOCUS_PUSH.x, push);
-  const focusY =
-    frame < PUSH_END ? mix(FOCUS_FROM.y, FOCUS_PUSH.y, push) : mix(FOCUS_PUSH.y, FOCUS_CREEP.y, creep);
-  // CSS zoom multiplies the layer's own offsets, so left/top are solved in
-  // layout px against the overscanned shake wrapper.
-  return {
-    scale,
-    left: (960 + OVERSCAN) / scale - focusX,
-    top: (540 + OVERSCAN) / scale - focusY,
-  };
-};
-
-const shakeAt = (frame: number) => {
-  const intensity = Math.pow(clamp01(rateAt(frame) / SHAKE_RATE_REF), 0.75);
-  // Counting starts while the camera is still pushing, so the frame already
-  // carries a faint buzz before the growth is fast enough to drive it.
-  const gate = clamp01((frame - COUNT_START) / 18);
-  // On the blast the camera drops into slow motion: the amplitude collapses and
-  // the chirp clock crawls, leaving the slow-blooming sparks to own the motion.
-  const slow = Easing.out(Easing.cubic)(clamp01((frame - BURST_START) / SLOWMO_RAMP));
-  const damp = mix(1, SLOWMO_AMP, slow);
-  const amp = gate * (2 + 11 * Math.pow(intensity, 1.25)) * damp;
-  // Quadratic chirp: the buzz speeds up with the counter as growth accelerates.
-  const warp = frame <= BURST_START ? frame : BURST_START + (frame - BURST_START) * SLOWMO_PHASE;
-  const phase = 0.7 * warp + 0.0026 * warp * warp;
-  return {
-    x: amp * (0.62 * Math.sin(phase + 0.9) + 0.38 * Math.sin(phase * 1.37 + 2.2)),
-    y: amp * (0.6 * Math.sin(phase * 1.17 + 2.6) + 0.4 * Math.sin(phase * 1.59 + 0.4)),
-    rot:
-      gate *
-      (0.05 + 0.4 * Math.pow(intensity, 1.2)) *
-      damp *
-      Math.sin(phase * 0.83 + 1.9),
-  };
-};
-
-const BurstFx: FC<{ frame: number; camera: ReturnType<typeof cameraAt> }> = ({ frame, camera }) => {
+const BurstFx: FC<{ frame: number; originX: number; originY: number }> = ({
+  frame,
+  originX,
+  originY,
+}) => {
   const age = frame - BURST_START;
   if (age < 0 || age > 112) return null;
-
-  const screenX = (x: number) => (camera.left + x) * camera.scale - OVERSCAN;
-  const screenY = (y: number) => (camera.top + y) * camera.scale - OVERSCAN;
-  const originX = screenX(BURST_ORIGIN.x);
-  const originY = screenY(BURST_ORIGIN.y);
 
   const ring = (delay: number, radius: number, duration: number, opacity: number, width: number) => {
     const local = age - delay;
@@ -228,7 +196,7 @@ const BurstFx: FC<{ frame: number; camera: ReturnType<typeof cameraAt> }> = ({ f
     });
 
   return (
-    <div style={{ position: 'absolute', left: OVERSCAN, top: OVERSCAN, width: 1920, height: 1080 }}>
+    <div style={{ position: 'absolute', left: 0, top: 0, width: 1920, height: 1080 }}>
       {bloom > 0.003 ? (
         <div
           style={{
@@ -282,7 +250,7 @@ const BurstFx: FC<{ frame: number; camera: ReturnType<typeof cameraAt> }> = ({ f
         {particles(EMBERS, 70, 0)}
       </svg>
       {flash > 0.003 ? (
-        <div style={{ position: 'absolute', inset: -OVERSCAN, background: '#FFE9F0', opacity: flash }} />
+        <div style={{ position: 'absolute', inset: 0, background: '#FFE9F0', opacity: flash }} />
       ) : null}
     </div>
   );
@@ -290,19 +258,61 @@ const BurstFx: FC<{ frame: number; camera: ReturnType<typeof cameraAt> }> = ({ f
 
 export const S05: FC = () => {
   const frame = useCurrentFrame();
-  const shot = frame - STATIC_HOLD;
-  const camera = cameraAt(shot);
-  const shake = shakeAt(shot);
-  const requests = Math.round(requestsAt(shot));
+  const f = frame;
+  const requests = Math.round(countAt(f));
   const unread = Math.round(requests * UNREAD_RATIO);
-  const kick =
-    shot < BURST_START
-      ? 0
-      : 0.018 *
-        Math.pow(
-          1 - Easing.out(Easing.cubic)(clamp01((shot - BURST_START) / SLOWMO_RAMP)),
-          2,
-        );
+
+  const lift = EASE.smooth(clamp01((f - LIFT_START) / (LIFT_END - LIFT_START)));
+  const veil = lift;
+  const blurPx = 18 * lift;
+  const bgScale = 1 + 0.05 * EASE.smooth(clamp01((f - LIFT_END) / 300));
+
+  const ft = Math.max(0, f - LIFT_END);
+  const floatGate = clamp01((f - LIFT_END) / 24);
+  const bob = 6 * Math.sin((TAU * ft) / 96) * floatGate;
+  const wobble = 0.35 * Math.sin((TAU * ft) / 150 + 0.8) * floatGate;
+  const breath = 0.002 * Math.sin((TAU * ft) / 84) * floatGate;
+
+  const p = clamp01((f - GROWTH_START) / (GROWTH_END - GROWTH_START));
+  const countFraction = Math.pow(p, GROWTH_EXP);
+  const climbing = f >= GROWTH_START && f < GROWTH_END;
+  const floodJitter = climbing
+    ? clamp01((f - GROWTH_START) / 60) * Math.pow(p, GROWTH_EXP - 1)
+    : 0;
+  const settle = f >= GROWTH_END ? Math.exp(-(f - GROWTH_END) / 7) : 0;
+  const burstAge = f - BURST_START;
+  const burstImpulse =
+    f >= BURST_START ? Math.max(0, 1 - Easing.out(Easing.cubic)(clamp01(burstAge / 10))) : 0;
+  const burstLinger = f >= BURST_START ? Math.exp(-burstAge / 14) : 0;
+
+  const cardCx = mix(ROW_CX, CARD_CX, lift);
+  const cardCy = mix(ROW_CY, CARD_CY, lift) + bob;
+  const cardScale =
+    mix(ENTRY_SCALE, 1, lift) * (1 + breath + 0.018 * settle + 0.03 * burstLinger);
+  const cardRot =
+    mix(0, TILT, lift) + wobble + 0.55 * floodJitter * Math.sin(f * 2.7 + 2) - 1.1 * burstLinger;
+  const jx = 3.4 * floodJitter * Math.sin(f * 3.1 + 0.7) + 4 * burstImpulse * Math.sin(f * 2.3);
+  const jy = 2.4 * floodJitter * Math.sin(f * 4.3 + 1.1) + 3 * burstImpulse * Math.sin(f * 2.9 + 1);
+  const glassOpacity = clamp01((f - LIFT_START) / 8);
+  const heat =
+    0.1 + 0.42 * countFraction + 0.18 * clamp01((f - GROWTH_END) / 120) + 0.35 * burstImpulse;
+
+  const rad = (cardRot * Math.PI) / 180;
+  const originX =
+    cardCx + jx + cardScale * (BURST_ANCHOR.x * Math.cos(rad) - BURST_ANCHOR.y * Math.sin(rad));
+  const originY =
+    cardCy + jy + cardScale * (BURST_ANCHOR.x * Math.sin(rad) + BURST_ANCHOR.y * Math.cos(rad));
+
+  const shakeImpulse =
+    f >= BURST_START ? Math.max(0, 1 - Easing.out(Easing.cubic)(clamp01(burstAge / 8))) : 0;
+  const shakeAmp = 12 * shakeImpulse + (f >= BURST_START ? 1.5 : 0);
+  const shakePhase =
+    f <= BURST_START ? f * 0.9 : BURST_START * 0.9 + (f - BURST_START) * 0.22;
+  const shakeX =
+    shakeAmp * (0.62 * Math.sin(shakePhase + 0.9) + 0.38 * Math.sin(shakePhase * 1.37 + 2.2));
+  const shakeY =
+    shakeAmp * (0.6 * Math.sin(shakePhase * 1.17 + 2.6) + 0.4 * Math.sin(shakePhase * 1.59 + 0.4));
+  const shakeRot = shakeAmp * 0.03 * Math.sin(shakePhase * 0.83 + 1.9);
 
   return (
     <Stage>
@@ -311,27 +321,218 @@ export const S05: FC = () => {
           position: 'absolute',
           inset: -OVERSCAN,
           overflow: 'hidden',
-          transform: `translate(${shake.x}px, ${shake.y}px) rotate(${shake.rot}deg) scale(${1 + kick})`,
+          transform: `translate(${shakeX.toFixed(2)}px, ${shakeY.toFixed(2)}px) rotate(${shakeRot.toFixed(3)}deg)`,
           transformOrigin: '50% 50%',
         }}
       >
-        <div
-          style={{
-            position: 'absolute',
-            left: camera.left,
-            top: camera.top,
-            width: 1920,
-            height: 1080,
-            zoom: camera.scale,
-          }}
-        >
-          <ConnectionDesktop
-            mainPanel={<TikTokMessages requests={requests} unread={unread} />}
-            cardState={select241}
+        <div style={{ position: 'absolute', left: OVERSCAN, top: OVERSCAN, width: 1920, height: 1080 }}>
+          {/* the dark stage turns into a bright lightbox as the card lifts */}
+          <div
+            style={{
+              position: 'absolute',
+              inset: 0,
+              opacity: veil,
+              background:
+                'linear-gradient(180deg, #E9EEF6 0%, #F4F7FC 46%, #E6ECF5 100%)',
+            }}
           />
+
+          {/* page, defocused behind the glass */}
+          <div
+            style={{
+              position: 'absolute',
+              inset: 0,
+              transform: `scale(${bgScale})`,
+              transformOrigin: '50% 50%',
+              filter:
+                blurPx > 0.05
+                  ? `blur(${blurPx.toFixed(2)}px) saturate(1.02) brightness(1.02)`
+                  : undefined,
+            }}
+          >
+            <ConnectionDesktop
+              mainPanel={<TikTokMessages requests={requests} unread={unread} />}
+              cardState={select241}
+              elevation={1 - 0.85 * lift}
+            />
+          </div>
+
+          {veil > 0.001 ? (
+            <>
+              <div
+                style={{
+                  position: 'absolute',
+                  inset: 0,
+                  opacity: veil,
+                  background:
+                    'linear-gradient(180deg, rgba(245,248,253,0.44) 0%, rgba(238,243,250,0.26) 46%, rgba(231,237,247,0.36) 100%)',
+                }}
+              />
+              <div
+                style={{
+                  position: 'absolute',
+                  inset: 0,
+                  opacity: veil,
+                  background:
+                    'radial-gradient(ellipse 62% 54% at 50% 45%, rgba(255,255,255,0.5) 0%, rgba(255,255,255,0) 72%)',
+                }}
+              />
+              <div
+                style={{
+                  position: 'absolute',
+                  left: 1040 + Math.sin(f / 60) * 12,
+                  top: 300 + Math.cos(f / 70) * 10,
+                  width: 1080,
+                  height: 1080,
+                  borderRadius: '50%',
+                  opacity: veil * (0.9 + 0.6 * burstImpulse),
+                  background:
+                    'radial-gradient(circle, rgba(238,19,87,0.14) 0%, rgba(238,19,87,0) 66%)',
+                }}
+              />
+              <div
+                style={{
+                  position: 'absolute',
+                  left: 200 + Math.cos(f / 64) * 14,
+                  top: 420 + Math.sin(f / 58) * 12,
+                  width: 940,
+                  height: 940,
+                  borderRadius: '50%',
+                  opacity: veil,
+                  background:
+                    'radial-gradient(circle, rgba(68,162,255,0.12) 0%, rgba(68,162,255,0) 68%)',
+                }}
+              />
+              <div
+                style={{
+                  position: 'absolute',
+                  left: 620,
+                  top: 210 + Math.sin(f / 66) * 8,
+                  width: 720,
+                  height: 720,
+                  borderRadius: '50%',
+                  opacity: veil,
+                  background:
+                    'radial-gradient(circle, rgba(255,226,204,0.20) 0%, rgba(255,226,204,0) 70%)',
+                }}
+              />
+              <div
+                style={{
+                  position: 'absolute',
+                  inset: 0,
+                  opacity: veil * 0.85,
+                  background:
+                    'radial-gradient(ellipse 80% 78% at 50% 48%, rgba(8,14,26,0) 55%, rgba(8,14,26,0.16) 100%)',
+                }}
+              />
+            </>
+          ) : null}
+
+          {lift > 0.001 ? (
+            <div
+              style={{
+                position: 'absolute',
+                left: cardCx - CARD_W * 0.34 * cardScale,
+                // The cast shadow stays on the ground while the card bobs.
+                top: CARD_CY + (CARD_H / 2) * cardScale + 46,
+                width: CARD_W * 0.68 * cardScale * (1 - bob / 160),
+                height: 110,
+                opacity: lift * 0.9 * (0.9 + 0.1 * (bob / 6)),
+                background:
+                  'radial-gradient(ellipse 50% 50% at 50% 50%, rgba(16,24,40,0.34) 0%, rgba(16,24,40,0.12) 45%, rgba(16,24,40,0) 74%)',
+                filter: 'blur(12px)',
+              }}
+            />
+          ) : null}
+
+          {f >= LIFT_START ? (
+            <div
+              style={{
+                position: 'absolute',
+                left: CARD_LEFT,
+                top: CARD_TOP,
+                width: CARD_W,
+                height: CARD_H,
+                transform: `translate(${(cardCx - CARD_CX + jx).toFixed(2)}px, ${(cardCy - CARD_CY + jy).toFixed(2)}px) rotate(${cardRot.toFixed(3)}deg) scale(${cardScale.toFixed(5)})`,
+                transformOrigin: '50% 50%',
+              }}
+            >
+              <div
+                style={{
+                  position: 'absolute',
+                  inset: 0,
+                  borderRadius: 30,
+                  opacity: glassOpacity,
+                  background:
+                    'linear-gradient(180deg, rgba(255,255,255,0.5) 0%, rgba(255,254,251,0.36) 55%, rgba(249,246,242,0.42) 100%)',
+                  backdropFilter: 'blur(30px) saturate(1.3)',
+                  WebkitBackdropFilter: 'blur(30px) saturate(1.3)',
+                  border: '1.5px solid rgba(255,255,255,0.92)',
+                  boxShadow:
+                    '0 0 0 1px rgba(18,28,48,0.05), inset 0 2px 0 rgba(255,255,255,0.95), inset 0 -14px 30px rgba(108,122,146,0.09), 0 6px 16px rgba(16,24,40,0.08), 0 48px 90px -30px rgba(16,24,40,0.35)',
+                }}
+              />
+              <div
+                style={{
+                  position: 'absolute',
+                  left: '24%',
+                  right: '24%',
+                  top: 3,
+                  height: 1.5,
+                  opacity: glassOpacity,
+                  background:
+                    'linear-gradient(90deg, rgba(255,255,255,0), rgba(255,255,255,0.95) 22%, rgba(255,255,255,0.7) 78%, rgba(255,255,255,0))',
+                }}
+              />
+              <div
+                style={{
+                  position: 'absolute',
+                  left: 300,
+                  top: 100,
+                  width: 780,
+                  height: 200,
+                  borderRadius: 100,
+                  opacity: heat * 0.35,
+                  filter: 'blur(6px)',
+                  background:
+                    'radial-gradient(ellipse 50% 50% at 50% 50%, rgba(238,19,87,0.55) 0%, rgba(238,19,87,0) 72%)',
+                }}
+              />
+              <div
+                style={{
+                  position: 'absolute',
+                  left: PAD_X,
+                  top: PAD_Y,
+                  width: CONTENT_W,
+                  height: CONTENT_H,
+                  // Hold the lifted copy back for two frames: at LIFT_START it
+                  // sits on the still-sharp page row, and a 4x-then-downscaled
+                  // render does not match the page's 1x glyphs closely enough to
+                  // hide the overlay.
+                  opacity: clamp01((f - LIFT_START - 1) / 5),
+                  fontFamily: '"Segoe UI", "Helvetica Neue", Arial, sans-serif',
+                }}
+              >
+                <div
+                  style={{
+                    position: 'absolute',
+                    left: 0,
+                    top: 0,
+                    width: ROW_W,
+                    height: ROW_H,
+                    zoom: ROW_ZOOM,
+                  }}
+                >
+                  <MessageRequestsRow requests={requests} />
+                </div>
+              </div>
+            </div>
+          ) : null}
+
+          <BurstFx frame={f} originX={originX} originY={originY} />
         </div>
-        <BurstFx frame={shot} camera={camera} />
       </div>
+      {veil > 0.01 ? <Grain opacity={0.035 * veil} blend="soft-light" /> : null}
     </Stage>
   );
 };

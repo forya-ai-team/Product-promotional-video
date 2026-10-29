@@ -16,7 +16,13 @@ Beat grids are anchored to picture cues, in frames @30fps:
 The final cadence (2553f / 2661f) is free because the drums have stopped; the
 tail card's own beats (2707 flip / 2719 bloom / 2751 brand field) are SFX only.
 
-Outputs (48 kHz stereo float32, 94.1 s = 2823 frames):
+The picture has since moved ahead of these stems (D46 / D48 / D49): the working
+tree is 3315f / 110.50s with S055 (2035-2215) and S065 (2857-3169) inserted.
+S06_REPLY / REPORT are now 2387 / 2749f (+196f), the tail card starts at 3153f
+(+492f), S055's 2138f flip has no cue, and S05's three shutter clicks are still
+missing. Re-anchor every cue and re-render both cuts before a delivery master.
+
+Outputs (48 kHz stereo float32, 94.1 s = 2823 frames; stems only, picture 3315f):
   public/audio/bgm/apple-score-bgm.wav   music bed
   public/audio/sfx/apple-score-sfx.wav   designed SFX (kept in the no-BGM cut)
 

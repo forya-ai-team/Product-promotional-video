@@ -8,6 +8,8 @@ import { S03Static } from './promo/scenes/S03Static';
 import { S04 } from './promo/scenes/S04';
 import { S04Static } from './promo/scenes/S04Static';
 import { S05 } from './promo/scenes/S05';
+import { S055 } from './promo/scenes/S055';
+import { S05BeatCut } from './promo/scenes/S05BeatCut';
 import { S05Static } from './promo/scenes/S05Static';
 import { S06ReplyFull } from './promo/scenes/S06Reply';
 import { S06Spotlight } from './promo/scenes/S06Spotlight';
@@ -21,6 +23,8 @@ import {
   S03_DURATION,
   S04_DURATION,
   S05_DURATION,
+  S05BEATCUT_DURATION,
+  S055_DURATION,
   S06_DURATION,
   S06_SPOTLIGHT_DURATION,
   S065_DURATION,
@@ -100,6 +104,22 @@ export const RemotionRoot: FC = () => {
         id="S05"
         component={S05}
         durationInFrames={S05_DURATION}
+        fps={FPS}
+        width={1920}
+        height={1080}
+      />
+      <Composition
+        id="S05BeatCut"
+        component={S05BeatCut}
+        durationInFrames={S05BEATCUT_DURATION}
+        fps={FPS}
+        width={1920}
+        height={1080}
+      />
+      <Composition
+        id="S055"
+        component={S055}
+        durationInFrames={S055_DURATION}
         fps={FPS}
         width={1920}
         height={1080}

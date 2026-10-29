@@ -109,8 +109,13 @@ const RequestsGlyph: FC = () => (
   </svg>
 );
 
-const MessageRequestsItem: FC<{ requests: number }> = ({ requests }) => (
-  <div style={{ position: 'absolute', left: 0, top: ROW_TOP, width: MSG_WIDTH, height: ROW_HEIGHT }}>
+export const REQUESTS_ROW_WIDTH = MSG_WIDTH;
+export const REQUESTS_ROW_HEIGHT = ROW_HEIGHT;
+
+// Same row the list renders, without the list offset: S05 lifts this exact DOM
+// into its floating card so the card and the page cannot drift apart.
+export const MessageRequestsRow: FC<{ requests: number }> = ({ requests }) => (
+  <div style={{ position: 'absolute', left: 0, top: 0, width: MSG_WIDTH, height: ROW_HEIGHT }}>
     <div
       style={{
         position: 'absolute',
@@ -174,6 +179,12 @@ const MessageRequestsItem: FC<{ requests: number }> = ({ requests }) => (
     >
       {requests > 99 ? '99+' : requests}
     </div>
+  </div>
+);
+
+const MessageRequestsItem: FC<{ requests: number }> = ({ requests }) => (
+  <div style={{ position: 'absolute', left: 0, top: ROW_TOP, width: MSG_WIDTH, height: ROW_HEIGHT }}>
+    <MessageRequestsRow requests={requests} />
   </div>
 );
 

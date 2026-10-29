@@ -10,7 +10,10 @@ export const S02_DURATION = sec(5.5); // 165
 export const S03_LEAD = sec(0.8); // 24
 export const S03_DURATION = 486 + S03_LEAD; // 510
 export const S04_DURATION = 464;
-export const S05_DURATION = 540;
+export const S05_DURATION = 480;
+export const S05BEATCUT_DURATION = 540;
+// 180f = exactly 3 bars at 120 BPM, so the workflow groove keeps its grid.
+export const S055_DURATION = sec(6);
 export const S06_SPOTLIGHT_DURATION = 172;
 export const S06_REPLY_DURATION = 486;
 export const S06_DURATION = S06_SPOTLIGHT_DURATION + S06_REPLY_DURATION; // 658
@@ -75,11 +78,28 @@ export const SCENES: SceneSpec[] = [
   },
   {
     id: 'S05',
-    title: '消息请求爆量',
+    title: '消息请求 8 秒涨到 999',
     durationInFrames: S05_DURATION,
-    transitionAfter: { kind: 'fade', durationInFrames: 16 },
-    cards: [],
-    acceptanceFrames: [sec(2), sec(7), sec(11), sec(14), sec(17)],
+    // Hard cut on the burst's afterglow into the light bloom card: the card is
+    // the page turn, so a dip here would spend the accent twice.
+    transitionAfter: { kind: 'cut', durationInFrames: 0 },
+    // Only the frosted-glass material is borrowed from this card; the lift,
+    // float and 8s climb are bespoke (D51).
+    cards: ['glass-pill-dictation-typing'],
+    // read / lift mid / landed / climb start / mid climb / late climb / 999 + burst / last
+    acceptanceFrames: [15, 45, 60, 120, 240, 300, 360, S05_DURATION - 1],
+  },
+  {
+    id: 'S055',
+    title: '矩阵聚合 / 全天候托管',
+    durationInFrames: S055_DURATION,
+    // The card settles at 156f and holds a full 24f; cutting into S06's
+    // lights-off stage keeps that hold instead of dissolving text over it.
+    transitionAfter: { kind: 'cut', durationInFrames: 0 },
+    cards: ['aurora-bloom-bg-flip'],
+    // A settled in the rise / A blur-out / press-down mid / empty dark beat /
+    // B first phrase / B settled (colour done at 156) / last frame
+    acceptanceFrames: [40, 90, 108, 118, 132, 162, S055_DURATION - 1],
   },
   {
     id: 'S06',
