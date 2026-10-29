@@ -79,13 +79,14 @@ export const SCENES: SceneSpec[] = [
   },
   {
     id: 'S04',
-    title: '批量启动 / 连接页',
+    title: '批量启动 / 代理接入巡视',
     durationInFrames: S04_DURATION,
     transitionAfter: { kind: 'cut', durationInFrames: 0 },
-    cards: [],
-    // 190f 1.55× depth stack / 417f select begins / 430f rebound peak /
-    // 456f cursor gone / last frame settled
-    acceptanceFrames: [sec(5), sec(10), 190, 417, 430, 456, S04_DURATION - 1],
+    // reticle-lock-on + the fixed readout grammar; the camera stays at 1x (D53).
+    cards: ['fui-hud-moves', 'gauge-readout-moves'],
+    // 93f viewfinder locked / 110f mid-stream 009 / 215f 090 + green dot /
+    // 250f release / 417f select begins / 430f rebound peak / 456f cursor gone
+    acceptanceFrames: [sec(5), 93, 110, 215, 250, 417, 430, 456, S04_DURATION - 1],
   },
   {
     id: 'S05',

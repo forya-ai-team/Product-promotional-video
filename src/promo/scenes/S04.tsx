@@ -1,5 +1,6 @@
 import type { FC } from 'react';
 import { Easing, useCurrentFrame } from 'remotion';
+import { FeedViewfinder } from '../shots/feedViewfinder/FeedViewfinder';
 import { BigCursor } from '../ui/tolink/BigCursor';
 import {
   ConnectionDesktop,
@@ -29,13 +30,10 @@ const SHIFT_FADE = 7;
 const ENTRY_FADE = 9;
 const RENDER_AHEAD = 16;
 
-const PUSH_START = 124;
-const PUSH_END = 204;
-const PULL_START = 222;
-const PULL_END = 322;
-const MAX_SCALE = 1.55;
-const FOCUS_Y_TOP = 440;
-const FOCUS_Y_FULL = 540;
+// The camera stays at 1x for the whole scene (D53); the stream fades on its own
+// after the viewfinder has read it out.
+const FADE_START = 222;
+const FADE_SPAN = 84;
 
 const CURSOR_IN_START = 322;
 const CURSOR_IN_END = 336;
@@ -50,15 +48,12 @@ const SELECT_END = 434;
 const RIPPLE_DURATION = 28;
 
 const clamp01 = (value: number) => Math.min(1, Math.max(0, value));
-const mix = (from: number, to: number, p: number) => from + (to - from) * p;
 const dist = (a: { x: number; y: number }, b: { x: number; y: number }) =>
   Math.hypot(a.x - b.x, a.y - b.y);
 
 const enterEase = Easing.out(Easing.cubic);
 const shiftEase = Easing.out(Easing.cubic);
 const checkEase = Easing.out(Easing.back(1.7));
-const pushEase = Easing.inOut(Easing.cubic);
-const pullEase = Easing.inOut(Easing.sin);
 const cursorEase = Easing.bezier(0.3, 0, 0.25, 1);
 
 // Accelerating schedule: first toast on 78, 90th on 210.
@@ -96,26 +91,6 @@ const buildFeed = (frame: number): ToastFeedItem[] => {
     });
   }
   return items;
-};
-
-const cameraAt = (frame: number) => {
-  let scale = 1;
-  let focusY = FOCUS_Y_FULL;
-
-  if (frame >= PUSH_START && frame < PUSH_END) {
-    const p = pushEase(clamp01((frame - PUSH_START) / (PUSH_END - PUSH_START)));
-    scale = mix(1, MAX_SCALE, p);
-    focusY = mix(FOCUS_Y_FULL, FOCUS_Y_TOP, p);
-  } else if (frame >= PUSH_END && frame < PULL_START) {
-    scale = MAX_SCALE;
-    focusY = FOCUS_Y_TOP;
-  } else if (frame >= PULL_START) {
-    const p = pullEase(clamp01((frame - PULL_START) / (PULL_END - PULL_START)));
-    scale = mix(MAX_SCALE, 1, p);
-    focusY = mix(FOCUS_Y_TOP, FOCUS_Y_FULL, p);
-  }
-
-  return { scale, tx: 960 - 960 * scale, ty: 540 - focusY * scale };
 };
 
 const pressAt = (frame: number, pressStart: number, clickFrame: number) => {
@@ -185,9 +160,11 @@ export const S04: FC = () => {
   };
 
   const textReveal = enterEase(clamp01((frame - TEXT_START) / TEXT_FADE));
-  const backing = enterEase(clamp01((frame - (POP_START - 4)) / 20));
-  const cardFade = 1 - Easing.in(Easing.quad)(clamp01((frame - PULL_START) / 84));
-  const camera = cameraAt(frame);
+  // No camera push now, so the page-colour backing covers the loading spinner
+  // before the viewfinder names the feed.
+  const backing = enterEase(clamp01((frame - (POP_START - 4)) / 12));
+  const cardFade = 1 - Easing.in(Easing.quad)(clamp01((frame - FADE_START) / FADE_SPAN));
+  const toastCount = POP_FRAMES.filter((popFrame) => popFrame <= frame).length;
 
   const cursorOpacity = enterEase(
     clamp01((frame - CURSOR_IN_START) / (CURSOR_IN_END - CURSOR_IN_START)),
@@ -228,15 +205,7 @@ export const S04: FC = () => {
   return (
     <Stage>
       <div style={{ position: 'absolute', inset: 0, overflow: 'hidden' }}>
-        <div
-          style={{
-            position: 'absolute',
-            width: 1920,
-            height: 1080,
-            transformOrigin: '0 0',
-            transform: `translate(${camera.tx}px, ${camera.ty}px) scale(${camera.scale})`,
-          }}
-        >
+        <div style={{ position: 'absolute', width: 1920, height: 1080 }}>
           <ConnectionDesktop
             toastLayer={
               <ToastFeed
@@ -254,6 +223,7 @@ export const S04: FC = () => {
             overlay={
               <>
                 <CardRipple frame={frame} />
+                <FeedViewfinder frame={frame} count={toastCount} />
                 <div
                   style={{
                     position: 'absolute',
