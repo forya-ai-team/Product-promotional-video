@@ -1,10 +1,16 @@
 import type { FC } from 'react';
 import { Easing, random, useCurrentFrame } from 'remotion';
+import { sec } from '../timeline';
 import { ConnectionDesktop, type CardVisualState } from '../ui/tolink/ConnectionDesktop';
 import { Stage } from '../ui/tolink/Stage';
 import { TikTokMessages } from '../ui/tolink/TikTokMessages';
 
-export const S05_DURATION = 450;
+// The untouched messages page holds for 5s so the viewer can read it before the
+// camera starts pushing; every animation constant below is relative to the end
+// of that hold.
+const STATIC_HOLD = sec(5);
+const ANIMATION_SPAN = 450;
+export const S05_DURATION = STATIC_HOLD + ANIMATION_SPAN;
 
 const OVERSCAN = 40;
 
@@ -26,7 +32,7 @@ const FOCUS_PUSH = { x: 660, y: 310 };
 const FOCUS_CREEP = { x: 660, y: 318 };
 
 const COUNT_START = 24;
-const COUNT_END = 450;
+const COUNT_END = ANIMATION_SPAN;
 const REQUESTS_FROM = 250;
 const REQUESTS_TO = 250000;
 const UNREAD_RATIO = 203 / 250;
@@ -277,16 +283,17 @@ const BurstFx: FC<{ frame: number; camera: ReturnType<typeof cameraAt> }> = ({ f
 
 export const S05: FC = () => {
   const frame = useCurrentFrame();
-  const camera = cameraAt(frame);
-  const shake = shakeAt(frame);
-  const requests = Math.round(requestsAt(frame));
+  const shot = frame - STATIC_HOLD;
+  const camera = cameraAt(shot);
+  const shake = shakeAt(shot);
+  const requests = Math.round(requestsAt(shot));
   const unread = Math.round(requests * UNREAD_RATIO);
   const kick =
-    frame < BURST_START
+    shot < BURST_START
       ? 0
       : 0.018 *
         Math.pow(
-          1 - Easing.out(Easing.cubic)(clamp01((frame - BURST_START) / SLOWMO_RAMP)),
+          1 - Easing.out(Easing.cubic)(clamp01((shot - BURST_START) / SLOWMO_RAMP)),
           2,
         );
 
@@ -316,7 +323,7 @@ export const S05: FC = () => {
             cardState={select241}
           />
         </div>
-        <BurstFx frame={frame} camera={camera} />
+        <BurstFx frame={shot} camera={camera} />
       </div>
     </Stage>
   );

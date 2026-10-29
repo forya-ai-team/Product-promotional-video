@@ -56,10 +56,10 @@ export const SCENES: SceneSpec[] = [
   {
     id: 'S05',
     title: '核心功能 C',
-    durationInFrames: sec(15),
+    durationInFrames: sec(20),
     transitionAfter: { kind: 'portal-wipe', durationInFrames: 48 },
     cards: ['row-embed'],
-    acceptanceFrames: [sec(4), sec(8), sec(11), sec(13)],
+    acceptanceFrames: [sec(2), sec(9), sec(13), sec(16), sec(18)],
   },
   {
     id: 'S06',
