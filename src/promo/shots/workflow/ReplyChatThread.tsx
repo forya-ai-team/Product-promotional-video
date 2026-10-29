@@ -4,25 +4,25 @@ import { EASE, ramp } from '../spotlightHeroCard/polish';
 import { ChatPanel } from '../../ui/tolink/ChatPanel';
 import { S06_CHAT } from '../../ui/tolink/s06Data';
 
-export type ReplyMessage = { kind: 'in' | 'out'; text: string; at: number };
+export type ReplyMessage = { kind: 'in' | 'out'; text: string; at: number; lines: number };
 
-// Mock conversation; the timings are the shot's reply beats (see plan.REPLY_AT).
+// Mock DM: the bot guides the download, the customer answers with the UID he
+// registered in the app. Timings are the shot's beats (plan.ts).
 export const REPLY_MESSAGES: ReplyMessage[] = [
-  { kind: 'in', text: 'Is this still available?', at: 30 },
-  { kind: 'out', text: 'Yes — in stock. Want the details?', at: 205 },
-  { kind: 'in', text: 'How much for two?', at: 215 },
-  { kind: 'out', text: 'US$58 for two, shipping included.', at: 240 },
-  { kind: 'in', text: 'Can you ship to Germany?', at: 247 },
-  { kind: 'out', text: 'Yes — 6–9 days, tracked.', at: 272 },
-  { kind: 'in', text: 'Do you have it in black?', at: 279 },
-  { kind: 'out', text: 'Black is in stock. Reserve one?', at: 304 },
-  { kind: 'in', text: 'Reserve it please', at: 311 },
-  { kind: 'out', text: 'Reserved for 24h — link sent.', at: 336 },
+  { kind: 'in', text: 'hey! how do I get started?', at: 20, lines: 1 },
+  { kind: 'out', text: 'Welcome to Oumi 👋 Want to grow your TikTok account?', at: 44, lines: 1 },
+  { kind: 'in', text: 'yes! I need more real followers', at: 68, lines: 1 },
+  { kind: 'out', text: "Download the Oumi app and sign up first — it's free.", at: 94, lines: 1 },
+  { kind: 'in', text: 'ok, just downloaded it', at: 120, lines: 1 },
+  { kind: 'out', text: 'Nice. Open your profile page and send me your UID.', at: 144, lines: 1 },
+  { kind: 'in', text: '2194615', at: 170, lines: 1 },
 ];
 
 const IN_H = 40;
 const OUT_H = 34;
 const GAP = 10;
+
+const rowHeight = (m: ReplyMessage) => (m.kind === 'in' ? IN_H + (m.lines - 1) * 20 : OUT_H + (m.lines - 1) * 21);
 
 type Props = { frame: number; width: number; height: number; radius: number };
 
@@ -31,15 +31,17 @@ export const ReplyChatThread: FC<Props> = ({ frame, width, height, radius }) => 
   const rows: { y: number; h: number }[] = [];
   let cursor = start;
   for (const m of REPLY_MESSAGES) {
-    const h = m.kind === 'in' ? IN_H : OUT_H;
+    const h = rowHeight(m);
     rows.push({ y: cursor, h });
     cursor += h + GAP;
   }
 
-  const shifts: number[] = rows.map((r) => Math.max(0, r.y + r.h - (height - 70)));
+  const shifts: number[] = rows.map((r) => Math.max(0, r.y + r.h - (height - 118)));
   let shift = 0;
   for (let i = 0; i < REPLY_MESSAGES.length; i++) {
-    const e = ramp(frame, REPLY_MESSAGES[i].at, 12, EASE.smooth);
+    // Scroll the thread up a beat before the bubble lands, so the newest
+    // message never slides out from behind the composer bar.
+    const e = ramp(frame, REPLY_MESSAGES[i].at - 8, 12, EASE.smooth);
     if (e <= 0) break;
     shift = (i === 0 ? 0 : shifts[i - 1]) + (shifts[i] - (i === 0 ? 0 : shifts[i - 1])) * e;
   }
@@ -69,14 +71,17 @@ export const ReplyChatThread: FC<Props> = ({ frame, width, height, radius }) => 
               position: 'absolute',
               left: 65,
               top,
+              height: rows[i].h,
+              maxWidth: 600,
               padding: '9px 16px 10px',
+              boxSizing: 'border-box',
               borderRadius: 8,
               background: '#4B4B4B',
               color: '#FFFFFF',
               fontSize: 15.5,
               lineHeight: '20px',
               fontWeight: 500,
-              whiteSpace: 'nowrap',
+              whiteSpace: 'pre-wrap',
               opacity: e,
             }}
           >
@@ -106,16 +111,17 @@ export const ReplyChatThread: FC<Props> = ({ frame, width, height, radius }) => 
             position: 'absolute',
             right: 51,
             top,
-            height: OUT_H,
+            height: rows[i].h,
+            maxWidth: 560,
             padding: '7px 18px',
             boxSizing: 'border-box',
             borderRadius: 8,
             background: '#00A8E8',
             color: '#FFFFFF',
             fontSize: 15.5,
-            lineHeight: '20px',
+            lineHeight: '21px',
             fontWeight: 500,
-            whiteSpace: 'nowrap',
+            whiteSpace: 'pre-wrap',
             opacity: e,
           }}
         >
@@ -132,7 +138,7 @@ export const ReplyChatThread: FC<Props> = ({ frame, width, height, radius }) => 
       radius={radius}
       background="#050506"
       threadShift={shift}
-      footerOpacity={1 - ramp(frame, 30, 14, EASE.out)}
+      footerOpacity={1 - ramp(frame, 22, 12, EASE.out)}
       extra={<>{bubbles}</>}
     />
   );

@@ -1,10 +1,11 @@
 import type { FC } from 'react';
-import { AbsoluteFill, Sequence, useCurrentFrame } from 'remotion';
+import { AbsoluteFill, Easing, Sequence, interpolate, useCurrentFrame } from 'remotion';
 import { PageCam, type CamKey2D } from '../shots/spotlightHeroCard/PageCam';
 import { Dust, EASE, Grain, alpha, ramp } from '../shots/spotlightHeroCard/polish';
 import { ReplyChatThread } from '../shots/workflow/ReplyChatThread';
 import { WorkflowPanel } from '../shots/workflow/WorkflowPanel';
-import { REPLY_DURATION } from '../shots/workflow/plan';
+import { LarkReportCard, REPORT_H, REPORT_W } from '../shots/workflow/LarkReportCard';
+import { CARD_AT, DURATION, LEAD_START, NOTIFY_AT, PANEL } from '../shots/workflow/plan';
 import { S06Spotlight } from './S06Spotlight';
 import { S06Desktop } from '../ui/tolink/S06Desktop';
 
@@ -18,7 +19,7 @@ const CARD = { x: 140, y: 122 };
 const GOLD = '#E4C58A';
 
 const FINAL: CamKey2D = { frame: 0, cx: 960, cy: 540, zoom: 1.0, rotX: 2, rotY: -6, rotZ: -1, persp: 1200 };
-const CAM: CamKey2D[] = [FINAL, { ...FINAL, frame: REPLY_DURATION }];
+const CAM: CamKey2D[] = [FINAL, { ...FINAL, frame: DURATION }];
 
 const NOTE_LINE_1 = 'TikTok 私信';
 const NOTE_LINE_2 = 'AI 自动应答';
@@ -31,6 +32,16 @@ export const S06Reply: FC = () => {
   const open = ramp(f, 6, 20, EASE.out);
   const content = ramp(f, 14, 18, EASE.out);
   const noteFade = 1 - ramp(f, 2, 12, EASE.out);
+  const veil = ramp(f, CARD_AT - 4, 16, EASE.smooth);
+  // The report grows out of the notify node: the camera centres that node, so
+  // scaling about the panel centre keeps the origin on it.
+  const cardT = interpolate(f, [CARD_AT, CARD_AT + 30], [0, 1], {
+    easing: Easing.bezier(0.45, 0, 0.2, 1),
+    extrapolateLeft: 'clamp',
+    extrapolateRight: 'clamp',
+  });
+  const cardScale = 0.05 + 0.95 * cardT;
+  const cardOpacity = Math.min(1, Math.max(0, (f - CARD_AT) / 4));
 
   return (
     <AbsoluteFill style={{ background: 'radial-gradient(120% 95% at 50% 0%, #141C2C 0%, #0A0F18 55%, #05070C 100%)' }}>
@@ -117,6 +128,22 @@ export const S06Reply: FC = () => {
           </div>
 
           <WorkflowPanel frame={f} open={open} content={content} />
+
+          {veil > 0.001 ? (
+            <div
+              style={{
+                position: 'absolute',
+                left: PANEL.x,
+                top: PANEL.y,
+                width: PANEL.w,
+                height: PANEL.h,
+                borderRadius: PANEL.r,
+                background: 'rgba(3,4,7,0.55)',
+                opacity: veil,
+                transform: 'translateZ(3px)',
+              }}
+            />
+          ) : null}
 
           <Spark frame={f} />
 
@@ -213,14 +240,33 @@ export const S06Reply: FC = () => {
           background: 'radial-gradient(ellipse 78% 78% at 50% 46%, rgba(2,3,6,0) 45%, rgba(2,3,6,0.38) 100%)',
         }}
       />
+
+      {f >= CARD_AT - 1 ? (
+        <div
+          style={{
+            position: 'absolute',
+            left: PANEL.x + PANEL.w / 2,
+            top: PANEL.y + PANEL.h / 2,
+            width: REPORT_W,
+            height: REPORT_H,
+            transform: `translate(-50%, -50%) scale(${cardScale.toFixed(4)})`,
+            transformOrigin: '50% 50%',
+            opacity: cardOpacity,
+          }}
+        >
+          <LarkReportCard />
+        </div>
+      ) : null}
+
       <Grain opacity={0.07} blend="soft-light" />
     </AbsoluteFill>
   );
 };
 
 const sparkPoint = (t: number) => {
-  const a = { x: 1028, y: 690 };
-  const c = { x: 1230, y: 520 };
+  // Leaves the UID bubble's right edge and arcs over the chat into the panel.
+  const a = { x: 300, y: 868 };
+  const c = { x: 780, y: 470 };
   const b = { x: 1465, y: 564 };
   const mt = 1 - t;
   return {
@@ -230,13 +276,17 @@ const sparkPoint = (t: number) => {
 };
 
 const Spark: FC<{ frame: number }> = ({ frame }) => {
-  const t = ramp(frame, 38, 14, EASE.linear);
+  const t = ramp(frame, LEAD_START - 8, 10, EASE.linear);
   if (t <= 0 || t >= 1) return null;
   const p = sparkPoint(t);
   const tail = sparkPoint(Math.max(0, t - 0.12));
   const op = Math.min(1, Math.sin(t * Math.PI) * 2.4);
   return (
-    <svg width={PAGE_W} height={PAGE_H} style={{ position: 'absolute', left: 0, top: 0, pointerEvents: 'none' }}>
+    <svg
+      width={PAGE_W}
+      height={PAGE_H}
+      style={{ position: 'absolute', left: 0, top: 0, pointerEvents: 'none', transform: 'translateZ(5px)' }}
+    >
       <line x1={tail.x} y1={tail.y} x2={p.x} y2={p.y} stroke={alpha(GOLD, 0.55 * op)} strokeWidth={2.5} strokeLinecap="round" />
       <circle cx={p.x} cy={p.y} r={16} fill={alpha(GOLD, 0.18 * op)} />
       <circle cx={p.x} cy={p.y} r={6.5} fill={GOLD} />
@@ -245,16 +295,16 @@ const Spark: FC<{ frame: number }> = ({ frame }) => {
   );
 };
 
-// Full S06: spotlight (172f) hands over to the auto-reply shot (420f).
+// Full S06: spotlight (172f) hands over to the UID → Lark shot (420f).
 export const S06ReplyFull: FC = () => (
   <AbsoluteFill>
     <Sequence durationInFrames={172}>
       <S06Spotlight />
     </Sequence>
-    <Sequence from={172} durationInFrames={REPLY_DURATION}>
+    <Sequence from={172} durationInFrames={DURATION}>
       <S06Reply />
     </Sequence>
   </AbsoluteFill>
 );
 
-export const S06_REPLY_TOTAL = 172 + REPLY_DURATION;
+export const S06_REPLY_TOTAL = 172 + DURATION;

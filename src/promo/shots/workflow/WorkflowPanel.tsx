@@ -1,7 +1,7 @@
 import type { FC } from 'react';
 import { EASE, alpha } from '../spotlightHeroCard/polish';
 import { EDGES, NODES, WORLD } from './workflowData';
-import { LEAD_END, PANEL, REPLY_AT, REPLY_NODE, cameraAt, nodeTop, pointOn, stateAt, worldToPanel } from './plan';
+import { FAN_B, LEAD_END, LEAD_START, NOTIFY_AT, NOTIFY_NODE, PANEL, cameraAt, nodeTop, pointOn, stateAt, worldToPanel } from './plan';
 
 const GREEN = '#3DDC97';
 const ORANGE = '#F5A03B';
@@ -11,13 +11,13 @@ const DOT = '#39404B';
 
 const ramp = (f: number, from: number, len: number) => EASE.out(Math.min(1, Math.max(0, (f - from) / len)));
 
-type Callout = { from: number; to: number; text: string; node?: string; panel?: { x: number; y: number } };
+type Callout = { from: number; to: number; text: string; node?: string; panel?: { x: number; y: number }; dy?: number };
 
 const CALLOUTS: Callout[] = [
-  { from: 52, to: 74, node: 'Webhook', text: 'Webhook 触发' },
-  { from: 90, to: 114, node: 'Intent Classifier', text: 'AI 意图识别' },
-  { from: 112, to: 162, panel: { x: 22, y: 78 }, text: '6 路分支并行' },
-  { from: 250, to: 334, panel: { x: 22, y: 78 }, text: '连续应答 · 全自动' },
+  { from: LEAD_START + 2, to: LEAD_START + 32, panel: { x: 22, y: 78 }, text: '收到 UID 消息' },
+  { from: LEAD_START + 38, to: LEAD_START + 68, panel: { x: 22, y: 78 }, text: '识别到 UID' },
+  { from: LEAD_START + 74, to: FAN_B, panel: { x: 22, y: 78 }, text: '6 路分支并行' },
+  { from: FAN_B + 5, to: LEAD_END - 3, node: '分析卡片发送', dy: -70, text: '推送 Lark 机器人' },
 ];
 
 type Props = { frame: number; open: number; content: number };
@@ -26,9 +26,8 @@ export const WorkflowPanel: FC<Props> = ({ frame, open, content }) => {
   const cam = cameraAt(frame);
   const st = stateAt(frame);
   const z = cam.zoom;
-  const answered = REPLY_AT.filter((f) => frame >= f).length;
-  const running = frame >= 50 && frame < LEAD_END;
-  const chip = running ? '运行中' : answered > 0 ? `已自动应答 ${answered} 条` : '待机';
+  const running = frame >= LEAD_START && frame < LEAD_END;
+  const chip = running ? '运行中' : frame >= NOTIFY_AT ? '已推送 Lark 通知' : '待机';
 
   return (
     <div
@@ -103,7 +102,7 @@ export const WorkflowPanel: FC<Props> = ({ frame, open, content }) => {
           })}
           {[...st.flow.values()].map(({ s, progress }) => {
             const pt = pointOn(s.e.p, progress);
-            const tone = s.tone === 'lead' ? ORANGE : GREEN;
+            const tone = s.tone === 'lead' ? ORANGE : GOLD;
             const r = (s.e.kind === 'main' ? 7.4 : 5.6) / z;
             const prev = pointOn(s.e.p, Math.max(0, progress - 0.07));
             return (
@@ -217,7 +216,7 @@ export const WorkflowPanel: FC<Props> = ({ frame, open, content }) => {
       {CALLOUTS.map((c) => {
         const vis = Math.min(ramp(frame, c.from, 8), 1 - ramp(frame, c.to - 6, 8));
         if (vis <= 0.01) return null;
-        const p = c.panel ?? worldToPanel(nodeTop(c.node!).x, nodeTop(c.node!).y, cam);
+        const p = c.panel ?? worldToPanel(nodeTop(c.node!).x, nodeTop(c.node!).y + (c.dy ?? 0), cam);
         const transform = c.panel ? 'none' : 'translate(-50%, -100%)';
         return (
           <div
@@ -252,11 +251,11 @@ export const WorkflowPanel: FC<Props> = ({ frame, open, content }) => {
         height={PANEL.h}
         style={{ position: 'absolute', left: 0, top: 0, pointerEvents: 'none' }}
       >
-        {REPLY_AT.map((t, i) => {
-          const age = frame - t;
-          if (age < 0 || age > 14) return null;
-          const p = worldToPanel(REPLY_NODE.x, REPLY_NODE.y, cam);
-          const r = 16 + (age / 14) * 76;
+        {[0, 5].map((delay, i) => {
+          const age = frame - NOTIFY_AT - delay;
+          if (age < 0 || age > 18) return null;
+          const p = worldToPanel(NOTIFY_NODE.x, NOTIFY_NODE.y, cam);
+          const r = 16 + (age / 18) * 96;
           return (
             <circle
               key={`ring-${i}`}
@@ -264,8 +263,8 @@ export const WorkflowPanel: FC<Props> = ({ frame, open, content }) => {
               cy={p.y}
               r={r}
               fill="none"
-              stroke={alpha(GREEN, 0.7 * (1 - age / 14))}
-              strokeWidth={2}
+              stroke={alpha(GOLD, 0.8 * (1 - age / 18))}
+              strokeWidth={2.4}
             />
           );
         })}
@@ -348,7 +347,7 @@ export const WorkflowPanel: FC<Props> = ({ frame, open, content }) => {
             width: 8,
             height: 8,
             borderRadius: 4,
-            background: running ? GREEN : answered > 0 ? GREEN : '#6B7280',
+            background: running ? GREEN : frame >= NOTIFY_AT ? GOLD : '#6B7280',
             boxShadow: running ? `0 0 12px ${GREEN}` : undefined,
           }}
         />
@@ -358,12 +357,12 @@ export const WorkflowPanel: FC<Props> = ({ frame, open, content }) => {
         <span
           style={{
             marginLeft: 'auto',
-            padding: '5px 13px',
+            padding: '5px 14px',
             borderRadius: 20,
-            fontSize: 14,
-            color: answered > 0 ? '#8FEBC2' : '#A7AEB8',
-            background: answered > 0 ? 'rgba(61,220,151,0.10)' : 'rgba(255,255,255,0.05)',
-            border: `1px solid ${answered > 0 ? 'rgba(61,220,151,0.32)' : 'rgba(255,255,255,0.10)'}`,
+            fontSize: 18,
+            color: frame >= NOTIFY_AT ? '#F0D9AE' : '#A7AEB8',
+            background: frame >= NOTIFY_AT ? 'rgba(228,197,138,0.12)' : 'rgba(255,255,255,0.05)',
+            border: `1px solid ${frame >= NOTIFY_AT ? 'rgba(228,197,138,0.4)' : 'rgba(255,255,255,0.10)'}`,
           }}
         >
           {chip}
