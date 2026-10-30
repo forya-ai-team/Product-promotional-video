@@ -104,15 +104,15 @@ export const SCENES: SceneSpec[] = [
     id: 'S05',
     title: '消息请求 8 秒涨到 999',
     durationInFrames: S05_DURATION,
-    // Hard cut on the burst's afterglow into the light bloom card: the card is
-    // the page turn, so a dip here would spend the accent twice.
-    transitionAfter: { kind: 'cut', durationInFrames: 0 },
+    // D60: the push-in ends on the card's white face, then a 12f enter-only
+    // dissolve (no black dip, no flash) hands over to S055's light field.
+    transitionAfter: { kind: 'dissolve', durationInFrames: 12 },
     // Only the frosted-glass material is borrowed from this card; the lift,
     // float and 8s climb are bespoke (D51).
     cards: ['glass-pill-dictation-typing'],
     // read / lift mid (growth starts) / landed / early climb / mid climb /
-    // late climb / 999 + burst / last
-    acceptanceFrames: [15, 45, 60, 100, 165, 225, 285, S05_DURATION - 1],
+    // late climb / 999 + burst / push peak / last
+    acceptanceFrames: [15, 45, 60, 100, 165, 225, 285, 392, S05_DURATION - 1],
   },
   {
     id: 'S055',

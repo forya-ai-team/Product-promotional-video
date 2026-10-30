@@ -24,6 +24,16 @@ const LIFT_END = LIFT_START + sec(1); // 60
 const GROWTH_START = LIFT_START + sec(0.5); // 45
 const GROWTH_END = GROWTH_START + sec(8); // 285
 const BURST_START = GROWTH_END; // 999 lands and bursts on the same frame
+// D60: the card lunges at the lens while its embers die, then the 12f
+// enter-only dissolve hands its white face to S055's light field.
+const PUSH_START = BURST_START + 83; // 368
+const PUSH_END = BURST_START + 107; // 392
+// 396 * 2.75 > 1080, so the card face covers the frame edge to edge. The row
+// copy clears to white just before the dissolve, so S055's line never has to
+// cross-fade against the giant "999 requests".
+const PUSH_SCALE = 2.75;
+const PUSH_CLEAR_START = PUSH_START + 18; // 386
+const PUSH_CLEAR_END = PUSH_START + 30; // 398
 
 const select241 = (index: number): CardVisualState =>
   index === 0 ? { select: 1, hover: 0, press: 0 } : { select: 0, hover: 0, press: 0 };
@@ -265,7 +275,14 @@ export const S05: FC = () => {
   const lift = EASE.smooth(clamp01((f - LIFT_START) / (LIFT_END - LIFT_START)));
   const veil = lift;
   const blurPx = 18 * lift;
-  const bgScale = 1 + 0.05 * EASE.smooth(clamp01((f - LIFT_END) / 300));
+  // The page recedes a touch while the card comes at the lens, so the push
+  // reads as depth rather than a scale-up of the whole frame.
+  const push = Easing.in(Easing.cubic)(clamp01((f - PUSH_START) / (PUSH_END - PUSH_START)));
+  const pushClear = Easing.in(Easing.quad)(
+    clamp01((f - PUSH_CLEAR_START) / (PUSH_CLEAR_END - PUSH_CLEAR_START)),
+  );
+  const bgScale =
+    (1 + 0.05 * EASE.smooth(clamp01((f - LIFT_END) / 300))) * mix(1, 0.95, push);
 
   const ft = Math.max(0, f - LIFT_END);
   const floatGate = clamp01((f - LIFT_END) / 24);
@@ -288,9 +305,15 @@ export const S05: FC = () => {
   const cardCx = mix(ROW_CX, CARD_CX, lift);
   const cardCy = mix(ROW_CY, CARD_CY, lift) + bob;
   const cardScale =
-    mix(ENTRY_SCALE, 1, lift) * (1 + breath + 0.018 * settle + 0.03 * burstLinger);
+    mix(ENTRY_SCALE, 1, lift) *
+    (1 + breath + 0.018 * settle + 0.03 * burstLinger) *
+    mix(1, PUSH_SCALE, push);
   const cardRot =
-    mix(0, TILT, lift) + wobble + 0.55 * floodJitter * Math.sin(f * 2.7 + 2) - 1.1 * burstLinger;
+    (mix(0, TILT, lift) +
+      wobble +
+      0.55 * floodJitter * Math.sin(f * 2.7 + 2) -
+      1.1 * burstLinger) *
+    (1 - push);
   const jx = 3.4 * floodJitter * Math.sin(f * 3.1 + 0.7) + 4 * burstImpulse * Math.sin(f * 2.3);
   const jy = 2.4 * floodJitter * Math.sin(f * 4.3 + 1.1) + 3 * burstImpulse * Math.sin(f * 2.9 + 1);
   const glassOpacity = clamp01((f - LIFT_START) / 8);
@@ -437,7 +460,7 @@ export const S05: FC = () => {
                 top: CARD_CY + (CARD_H / 2) * cardScale + 46,
                 width: CARD_W * 0.68 * cardScale * (1 - bob / 160),
                 height: 110,
-                opacity: lift * 0.9 * (0.9 + 0.1 * (bob / 6)),
+                opacity: lift * 0.9 * (0.9 + 0.1 * (bob / 6)) * (1 - push),
                 background:
                   'radial-gradient(ellipse 50% 50% at 50% 50%, rgba(16,24,40,0.34) 0%, rgba(16,24,40,0.12) 45%, rgba(16,24,40,0) 74%)',
                 filter: 'blur(12px)',
@@ -509,7 +532,7 @@ export const S05: FC = () => {
                   // sits on the still-sharp page row, and a 4x-then-downscaled
                   // render does not match the page's 1x glyphs closely enough to
                   // hide the overlay.
-                  opacity: clamp01((f - LIFT_START - 1) / 5),
+                  opacity: clamp01((f - LIFT_START - 1) / 5) * (1 - pushClear),
                   fontFamily: '"Segoe UI", "Helvetica Neue", Arial, sans-serif',
                 }}
               >
@@ -526,6 +549,17 @@ export const S05: FC = () => {
                   <MessageRequestsRow requests={requests} />
                 </div>
               </div>
+              {pushClear > 0.001 ? (
+                <div
+                  style={{
+                    position: 'absolute',
+                    inset: 0,
+                    borderRadius: 30,
+                    opacity: pushClear,
+                    background: '#F0F2F6',
+                  }}
+                />
+              ) : null}
             </div>
           ) : null}
 
