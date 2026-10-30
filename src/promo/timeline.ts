@@ -10,13 +10,18 @@ const S01_AUTHORED_DURATION = sec(14); // 420
 export const S01_DURATION = sec(10); // 300
 export const S01_SPEED = S01_AUTHORED_DURATION / S01_DURATION; // 1.4
 export const S02_DURATION = sec(5.5); // 165
-// S03's body is the approved shot trimmed to 456f (D55); the lead is the hold
-// the portal-wipe lands on before the pointer starts moving (scene frame 0 ==
+// S03's body is 409f: D55's 456f, minus the 17f saved by the 1.25x pointer
+// (D56), minus a hard 30f tail cut (D57). The lead is the hold the
+// portal-wipe lands on before the pointer starts moving (scene frame 0 ==
 // body frame -24).
 export const S03_LEAD = sec(0.8); // 24
-export const S03_DURATION = 456 + S03_LEAD; // 480
-export const S04_DURATION = 464;
-export const S05_DURATION = 480;
+export const S03_DURATION = 409 + S03_LEAD; // 433
+// S04's pointer leg runs 1.25x faster (66f -> 53f), which pulls the select,
+// rebound and handoff 13f earlier (D58).
+export const S04_DURATION = 451;
+// S05: growth starts mid-lift (45) and bursts at 285; the 119f ember tail is
+// unchanged, so the shot is 405f instead of 480f (D59).
+export const S05_DURATION = 405;
 export const S05BEATCUT_DURATION = 540;
 // 180f = exactly 3 bars at 120 BPM, so the workflow groove keeps its grid.
 export const S055_DURATION = sec(6);
@@ -71,16 +76,16 @@ export const SCENES: SceneSpec[] = [
     durationInFrames: S03_DURATION,
     transitionAfter: { kind: 'cut', durationInFrames: 0 },
     cards: ['crane-rise-reveal'],
-    // Body frame + S03_LEAD: 76f first row embed, 112f last row, 150f crane
-    // hold, 246f brake overshoot, 394f batch-launch click, 440f ripple fading;
-    // the scene now cuts at body 455 (D55), so 458f is out of the shot.
+    // Body frame + S03_LEAD: 69f first row embed, 105f last row, 143f row
+    // wash, 239f brake overshoot, 377f batch-launch click, 400f ripple mid;
+    // the hard cut (D57) lands at body 408, mid-ripple, into S04's loading page.
     acceptanceFrames: [
-      76 + S03_LEAD,
-      112 + S03_LEAD,
-      150 + S03_LEAD,
-      246 + S03_LEAD,
-      394 + S03_LEAD,
-      440 + S03_LEAD,
+      69 + S03_LEAD,
+      105 + S03_LEAD,
+      143 + S03_LEAD,
+      239 + S03_LEAD,
+      377 + S03_LEAD,
+      400 + S03_LEAD,
       S03_DURATION - 1,
     ],
   },
@@ -92,8 +97,8 @@ export const SCENES: SceneSpec[] = [
     // reticle-lock-on + the fixed readout grammar; the camera stays at 1x (D53).
     cards: ['fui-hud-moves', 'gauge-readout-moves'],
     // 93f viewfinder locked / 110f mid-stream 009 / 215f 090 + green dot /
-    // 250f release / 417f select begins / 430f rebound peak / 456f cursor gone
-    acceptanceFrames: [sec(5), 93, 110, 215, 250, 417, 430, 456, S04_DURATION - 1],
+    // 250f release / 404f select begins / 417f rebound peak / 443f cursor gone
+    acceptanceFrames: [sec(5), 93, 110, 215, 250, 404, 417, 443, S04_DURATION - 1],
   },
   {
     id: 'S05',
@@ -105,8 +110,9 @@ export const SCENES: SceneSpec[] = [
     // Only the frosted-glass material is borrowed from this card; the lift,
     // float and 8s climb are bespoke (D51).
     cards: ['glass-pill-dictation-typing'],
-    // read / lift mid / landed / climb start / mid climb / late climb / 999 + burst / last
-    acceptanceFrames: [15, 45, 60, 120, 240, 300, 360, S05_DURATION - 1],
+    // read / lift mid (growth starts) / landed / early climb / mid climb /
+    // late climb / 999 + burst / last
+    acceptanceFrames: [15, 45, 60, 100, 165, 225, 285, S05_DURATION - 1],
   },
   {
     id: 'S055',

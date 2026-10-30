@@ -13,16 +13,16 @@ import {
 
 // 0–29 read the untouched page; at 30 the Message requests row is lifted out of
 // the list into a floating frosted-glass card (D51) while the page behind
-// defocuses into the glass. The count then climbs 1 → 999 across eight seconds
-// (120–360) and the burst fires on the very frame it lands (360).
+// defocuses into the glass. The count starts climbing halfway through that lift
+// (45, D59) and runs 1 → 999 across eight seconds, bursting on the frame it
+// lands.
 const STATIC_HOLD = sec(1); // 30
-const LAST_FRAME = 479;
 
 const OVERSCAN = 40;
 const LIFT_START = STATIC_HOLD; // 30
 const LIFT_END = LIFT_START + sec(1); // 60
-const GROWTH_START = LIFT_END + sec(2); // 120
-const GROWTH_END = GROWTH_START + sec(8); // 360
+const GROWTH_START = LIFT_START + sec(0.5); // 45
+const GROWTH_END = GROWTH_START + sec(8); // 285
 const BURST_START = GROWTH_END; // 999 lands and bursts on the same frame
 
 const select241 = (index: number): CardVisualState =>

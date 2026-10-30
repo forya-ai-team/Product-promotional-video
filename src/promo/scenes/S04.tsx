@@ -35,16 +35,20 @@ const RENDER_AHEAD = 16;
 const FADE_START = 222;
 const FADE_SPAN = 84;
 
+// Pointer travel runs 1.25x its old pace (66f -> 53f); every beat downstream
+// keeps its own duration and shifts earlier with it (D58).
+const CURSOR_SPEEDUP = 1.25;
 const CURSOR_IN_START = 322;
 const CURSOR_IN_END = 336;
-const CURSOR_MOVE_START = 336;
-const CURSOR_MOVE_END = 402;
+const CURSOR_MOVE_START = CURSOR_IN_END;
+const CURSOR_MOVE_END = CURSOR_MOVE_START + Math.round(66 / CURSOR_SPEEDUP); // 389
 // Screen position of S03's 批量启动 click, converted to window coords.
 const CURSOR_FROM = { x: 1658, y: 86 };
 const CURSOR_CONTROL = { x: 900, y: 210 };
-const PRESS_START = 412;
-const CLICK_FRAME = 416;
-const SELECT_END = 434;
+const PRESS_START = CURSOR_MOVE_END + 10; // 399
+const CLICK_FRAME = PRESS_START + 4; // 403
+const SELECT_END = CLICK_FRAME + 18; // 421
+const CURSOR_FADE_START = CLICK_FRAME + 26; // 429
 const RIPPLE_DURATION = 28;
 
 const clamp01 = (value: number) => Math.min(1, Math.max(0, value));
@@ -195,7 +199,7 @@ export const S04: FC = () => {
   // Chip-grid "one decision": a single 1.035 rebound + landing glow, settled
   // back to the exact S05 selected card before the cut.
   const lift = Math.sin(Math.PI * clamp01((frame - CLICK_FRAME) / 26));
-  const cursorFade = 1 - clamp01((frame - 442) / 14);
+  const cursorFade = 1 - clamp01((frame - CURSOR_FADE_START) / 14);
 
   const cardState = (index: number): CardVisualState =>
     index === 0

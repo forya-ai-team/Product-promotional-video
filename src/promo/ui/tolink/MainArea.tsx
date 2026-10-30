@@ -284,7 +284,6 @@ type MainAreaProps = {
   rows?: ConfigRow[];
   rowReveal?: (index: number) => number;
   rowMotion?: (index: number) => RowMotion;
-  rowBlur?: number;
   scrollOffset?: number;
   scrollProgress?: number;
   rowGlow?: number;
@@ -301,7 +300,6 @@ export const MainArea: FC<MainAreaProps> = ({
   rows = REFERENCE_ROWS,
   rowReveal = alwaysOne,
   rowMotion,
-  rowBlur = 0,
   scrollOffset = 0,
   scrollProgress = 0,
   rowGlow = 0,
@@ -428,7 +426,6 @@ export const MainArea: FC<MainAreaProps> = ({
           <div
             style={{
               transform: `translateY(${-scrollOffset}px)`,
-              filter: rowBlur > 0.05 ? `blur(${rowBlur.toFixed(2)}px)` : undefined,
             }}
           >
             {rows.map((row, index) => (

@@ -12,34 +12,38 @@ const WINDOW_TOP = tol.layout.stageTop;
 const CARD = { x: 172.5, y: 309.5 };
 const LAUNCH = LAUNCH_BUTTON_CENTER;
 
+// Pointer travel runs 1.25x its old pace (34f -> 27f, 48f -> 38f); every beat
+// downstream keeps its own duration and shifts earlier with it. That, not any
+// retimed beat, is what shortens the shot.
+const CURSOR_SPEEDUP = 1.25;
 const CURSOR_START = 24;
-const CURSOR_END = 58;
-const PRESS_START = 60;
-const CLICK_FRAME = 64;
+const CURSOR_END = CURSOR_START + Math.round(34 / CURSOR_SPEEDUP); // 51
+const PRESS_START = CURSOR_END + 2; // 53
+const CLICK_FRAME = PRESS_START + 4; // 57
 const RIPPLE_DURATION = 44;
-const PUSH_START = 88;
-const PUSH_END = 132;
-const HOLD_END = 156;
+const PUSH_START = CLICK_FRAME + 24; // 81
+const PUSH_END = PUSH_START + 44; // 125
+const HOLD_END = PUSH_END + 24; // 149
 // scroll-brake-moves A: sprint with sin-in, overshoot 34px past the end, then
 // eight frames of rebound. The end offset is unchanged.
-const SCROLL_START = 156;
-const SCROLL_SPRINT_END = 218;
-const SCROLL_BRAKE_END = 246;
-const SCROLL_SETTLE_END = 254;
+const SCROLL_START = HOLD_END; // 149
+const SCROLL_SPRINT_END = SCROLL_START + 62; // 211
+const SCROLL_BRAKE_END = SCROLL_SPRINT_END + 28; // 239
+const SCROLL_SETTLE_END = SCROLL_BRAKE_END + 8; // 247
 const SCROLL_SHORTFALL = 520;
 const SCROLL_OVERSHOOT = 34;
 // The crane starts six frames before the overshoot peak, so the pull-out
 // begins while the list is still decelerating and reads as its reaction.
-const CRANE_START = 240;
-const CRANE_END = 322;
+const CRANE_START = SCROLL_START + 84; // 233
+const CRANE_END = CRANE_START + 82; // 315
 
 // The pointer waits for the crane to settle, then crosses the window to the
 // toolbar so it never rides the camera transform.
-const MOVE2_START = 330;
-const MOVE2_END = 378;
+const MOVE2_START = CRANE_END + 8; // 323
+const MOVE2_END = MOVE2_START + Math.round(48 / CURSOR_SPEEDUP); // 361
 const MOVE2_CONTROL = { x: 620, y: 150 };
-const PRESS2_START = 390;
-const CLICK2_FRAME = 394;
+const PRESS2_START = MOVE2_END + 12; // 373
+const CLICK2_FRAME = PRESS2_START + 4; // 377
 
 const FOCUS_START = { x: 530, y: 330 };
 const FOCUS_END = { x: 960, y: 540 };
@@ -129,7 +133,7 @@ const cameraAt = (frame: number) => {
 // 18 rows are inside the viewport; their landing schedule accelerates as it
 // travels down. Each row is in the air for 10f before it lands (row-embed).
 const VISIBLE_ROWS = 18;
-const LOAD_START = 76;
+const LOAD_START = CLICK_FRAME + 12; // 69
 const LOAD_SPAN = 36;
 const ROW_FLIGHT = 10;
 const ROW_FLY_EASE = Easing.bezier(0.5, 0, 0.8, 0.75);
@@ -313,16 +317,16 @@ export const S03: FC = () => {
 
   const scrollOffset = scrollAt(frame);
   const scrollProgress = Math.min(1, scrollOffset / MAX_SCROLL);
-  const scrollVelocity = scrollOffset - scrollAt(frame - 1);
-  const rowBlur = Math.min(2.4, Math.abs(scrollVelocity) * 0.1);
   const rowMotion = rowMotionAt(frame);
-  // The row wash hands over to the brake at 246 so the landed bottom rows are
-  // clean when the crane reveals them.
+  // The row wash hands over to the brake at SCROLL_BRAKE_END so the landed
+  // bottom rows are clean when the crane reveals them.
   const rowGlow =
-    0.75 * clamp01((frame - 150) / 12) * (1 - clamp01((frame - 246) / 16));
+    0.75 *
+    clamp01((frame - (SCROLL_START - 6)) / 12) *
+    (1 - clamp01((frame - SCROLL_BRAKE_END) / 16));
   const count = Math.round(90 * Math.pow(clamp01((frame - LOAD_START) / LOAD_SPAN), 1.5));
-  const headerChecked = frame >= 112;
-  const scrollbarOpacity = Easing.out(Easing.cubic)(clamp01((frame - 104) / 18));
+  const headerChecked = frame >= LOAD_START + LOAD_SPAN;
+  const scrollbarOpacity = Easing.out(Easing.cubic)(clamp01((frame - (LOAD_START + 28)) / 18));
 
   return (
     <Stage>
@@ -340,7 +344,6 @@ export const S03: FC = () => {
             cardFeedback={{ glow, press }}
             rows={CONFIG_ROWS}
             rowMotion={rowMotion}
-            rowBlur={rowBlur}
             scrollOffset={scrollOffset}
             scrollProgress={scrollProgress}
             rowGlow={rowGlow}

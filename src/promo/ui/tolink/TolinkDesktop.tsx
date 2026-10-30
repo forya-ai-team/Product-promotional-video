@@ -13,7 +13,6 @@ type TolinkDesktopProps = {
   rows?: ConfigRow[];
   rowReveal?: (index: number) => number;
   rowMotion?: (index: number) => RowMotion;
-  rowBlur?: number;
   scrollOffset?: number;
   scrollProgress?: number;
   rowGlow?: number;
@@ -31,7 +30,6 @@ export const TolinkDesktop: FC<TolinkDesktopProps> = ({
   rows,
   rowReveal,
   rowMotion,
-  rowBlur,
   scrollOffset,
   scrollProgress,
   rowGlow,
@@ -60,7 +58,6 @@ export const TolinkDesktop: FC<TolinkDesktopProps> = ({
       rows={rows}
       rowReveal={rowReveal}
       rowMotion={rowMotion}
-      rowBlur={rowBlur}
       scrollOffset={scrollOffset}
       scrollProgress={scrollProgress}
       rowGlow={rowGlow}
