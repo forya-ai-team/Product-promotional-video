@@ -26,8 +26,13 @@ export const S05BEATCUT_DURATION = 540;
 // 180f = exactly 3 bars at 120 BPM, so the workflow groove keeps its grid.
 export const S055_DURATION = sec(6);
 export const S06_SPOTLIGHT_DURATION = 172;
-export const S06_REPLY_DURATION = 486;
-export const S06_DURATION = S06_SPOTLIGHT_DURATION + S06_REPLY_DURATION; // 658
+// The reply shot now stops the moment the complete report has grown over the
+// panel; S066 takes that exact frame and carries the card through the scan.
+export const S06_REPLY_DURATION = 402;
+export const S06_DURATION = S06_SPOTLIGHT_DURATION + S06_REPLY_DURATION; // 574
+// Intro (card to the left over frosted glass) + four section scans + a whole
+// card beat before it returns to centre for the S065 hand-off.
+export const S066_DURATION = 492;
 export const S065_DURATION = 312;
 // icon-flip-bloom: flip 46, bloom 52, settle-into-size 84, brand field 90,
 // tagline 105–129, then a 33f hold.
@@ -130,9 +135,28 @@ export const SCENES: SceneSpec[] = [
     id: 'S06',
     title: '私信 → 工作流 → Lark 报告',
     durationInFrames: S06_DURATION,
-    transitionAfter: { kind: 'dissolve', durationInFrames: 16 },
+    // S066 continues on the same card at the same coordinates, so this seam is
+    // an invisible cut rather than a dissolve.
+    transitionAfter: { kind: 'cut', durationInFrames: 0 },
     cards: ['spotlight-hero-card'],
-    acceptanceFrames: [S06_SPOTLIGHT_DURATION, 172 + 206, 172 + 372, S06_DURATION - 1],
+    acceptanceFrames: [
+      S06_SPOTLIGHT_DURATION,
+      172 + 206,
+      172 + 372,
+      172 + 392,
+      S06_DURATION - 1,
+    ],
+  },
+  {
+    id: 'S066',
+    title: '完整报告 · 逐节扫描',
+    durationInFrames: S066_DURATION,
+    transitionAfter: { kind: 'dissolve', durationInFrames: 16 },
+    // The scan grammar is bespoke: 3D document, frosted stage, lifted sections.
+    cards: [],
+    // card at rest left / 基础信息 lifted / 心理与意图 lifted / 风险评估 lifted /
+    // 运营跟进 lifted / card back at centre
+    acceptanceFrames: [46, 96, 186, 276, 370, S066_DURATION - 1],
   },
   {
     id: 'S065',

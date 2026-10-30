@@ -1,5 +1,6 @@
 import type { FC } from 'react';
 import { EASE, alpha } from '../spotlightHeroCard/polish';
+import { MaskedText } from '../../ui/MaskedText';
 import { EDGES, NODES, WORLD } from './workflowData';
 import { FAN_B, LEAD_END, LEAD_START, NOTIFY_AT, NOTIFY_NODE, PANEL, cameraAt, nodeTop, pointOn, stateAt, worldToPanel } from './plan';
 
@@ -175,7 +176,7 @@ export const WorkflowPanel: FC<Props> = ({ frame, open, content }) => {
               opacity: 0.92,
             }}
           >
-            {n.name}
+            <MaskedText text={n.name} />
           </div>
         ))}
 

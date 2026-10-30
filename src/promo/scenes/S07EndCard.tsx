@@ -57,6 +57,11 @@ export const S07EndCard: FC = () => {
   const { fps } = useVideoConfig();
 
   const enter = spring({ frame, fps, config: { damping: 13, stiffness: 140, mass: 0.8 } });
+  // The S065 dissolve overlaps frames 0–15: the icon is already on stage, dim
+  // and small, and rises with the incoming light instead of popping after the
+  // seam. Opacity hits 1 mid-dissolve; the spring still carries the settle.
+  const iconScale = 0.58 + 0.42 * enter;
+  const iconAlpha = clamp01(0.4 + 0.8 * enter);
   const wobble = interpolate(frame, [12, 18, 24, 30, FLIP_START], [0, -12, 14, -18, 0], {
     extrapolateLeft: 'clamp',
     extrapolateRight: 'clamp',
@@ -119,7 +124,7 @@ export const S07EndCard: FC = () => {
             borderRadius: '50%',
             background:
               'radial-gradient(ellipse at center, rgba(20,22,28,0.22) 0%, rgba(20,22,28,0) 70%)',
-            opacity: enter * shadowLife,
+            opacity: iconAlpha * shadowLife,
           }}
         />
       ) : null}
@@ -152,9 +157,9 @@ export const S07EndCard: FC = () => {
           <div style={{ filter: iconBlur > 0.05 ? `blur(${iconBlur}px)` : undefined }}>
             <div
               style={{
-                transform: `scale(${enter}) rotate(${wobble}deg) scaleX(${iconScaleX})`,
+                transform: `scale(${iconScale.toFixed(4)}) rotate(${wobble}deg) scaleX(${iconScaleX})`,
                 transformOrigin: 'center 78%',
-                opacity: enter,
+                opacity: iconAlpha,
               }}
             >
               <DmexXMark width={ICON_W} solid />

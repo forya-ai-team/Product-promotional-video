@@ -1,7 +1,7 @@
-// Report payloads re-typeset from the customer screenshots. The two hero cards
-// are transcribed from what the user supplied (screenshot/S06-…png,
-// screenshot/S06.5-信息流绿色图参考.jpg); every wall entry below is invented
-// data in the same shape — no real nicknames, IDs or accounts.
+// Report payloads re-typeset from the customer screenshots. The hero card is
+// the complete profile report the user supplied on 2026-10-30
+// (screenshot/用户信息卡.jpg); every wall entry below is invented data in the
+// same shape — no real nicknames, IDs or accounts.
 
 export type ReportTone = 'new' | 'existing';
 
@@ -11,10 +11,15 @@ export type ReportRow =
   | { t: 'txt'; icon: string; text: string }
   | { t: 'src'; icon: string; label: string; value: string; note: string }
   | { t: 'heat'; icon: string; label: string; value: string }
-  | { t: 'sum'; icon: string; label: string; text: string; lines: number }
-  | { t: 'gap' };
+  | { t: 'sum'; icon: string; label: string; text: string }
+  | { t: 'gap' }
+  | { t: 'section'; icon: string; title: string; accent?: 'green' }
+  | { t: 'bullet'; icon?: string; label: string; text: string }
+  | { t: 'note'; icon: string; label: string; code: string };
 
 type Kv = { icon: string; label: string; value: string };
+
+export type SectionSpan = { icon: string; title: string; accent?: 'green'; from: number; to: number };
 
 export type Report = {
   key: string;
@@ -22,14 +27,13 @@ export type Report = {
   name: string;
   serial: string;
   rows: ReportRow[];
+  sections?: SectionSpan[];
+  // The complete card is typeset denser than the feed tiles so it can sit in
+  // one 3D pose on screen; every metric below is derived from this factor.
+  typeScale?: number;
 };
 
 export const CARD_W = 838;
-export const ROW_H = 40;
-export const GAP_H = 18;
-const HEADER_H = 89;
-const PAD_TOP = 22;
-const PAD_BOTTOM = 26;
 
 export const CARD_BG = '#FFFFFF';
 export const INK = '#1D2129';
@@ -51,69 +55,231 @@ export const TONE = {
   },
 } as const;
 
-// Content-driven so the wall gets real masonry heights; the S06 hero still
-// passes an explicit 748 to stay pixel-identical to the assembled cut.
-export const reportHeight = (r: Report) =>
-  HEADER_H +
-  PAD_TOP +
-  PAD_BOTTOM +
-  r.rows.reduce(
-    (n, row) => n + (row.t === 'gap' ? GAP_H : ROW_H * (row.t === 'sum' ? row.lines : 1)),
-    0,
-  );
+// --- layout ----------------------------------------------------------------
 
-const IDENTITY = (id: string, level: string, nick: string, device: string, time: string): ReportRow[] => [
-  {
-    t: 'pair',
-    a: { icon: '📱', label: 'Oumi ID:', value: id },
-    b: { icon: '💎', label: 'TikTok等级:', value: level },
-  },
-  { t: 'kv', icon: '👤', label: 'Tk昵称:', value: nick },
-  { t: 'kv', icon: '💻', label: '设备型号:', value: device },
-  { t: 'kv', icon: '⏰', label: '收集时间:', value: time },
-];
+export type Metrics = {
+  width: number;
+  padX: number;
+  padTop: number;
+  padBottom: number;
+  headFont: number;
+  headH: number;
+  body: number;
+  line: number;
+  rowH: number;
+  gapH: number;
+  secFont: number;
+  secH: number;
+  bulletLead: number;
+};
 
-const SOURCE = (account: string): ReportRow => ({
-  t: 'src',
-  icon: '📋',
-  label: '用户画像分析报告',
-  value: account,
-  note: '(未在映射表中找到)',
+export const metrics = (typeScale = 1, width = CARD_W): Metrics => ({
+  width,
+  padX: 30 * typeScale,
+  padTop: 22 * typeScale,
+  padBottom: 26 * typeScale,
+  headFont: 33 * typeScale,
+  headH: 89 * typeScale,
+  body: 30 * typeScale,
+  line: 40 * typeScale,
+  rowH: 40 * typeScale,
+  gapH: 18 * typeScale,
+  secFont: 30 * typeScale,
+  secH: 56 * typeScale,
+  bulletLead: 24 * typeScale,
 });
 
-const HEAT = (value: string): ReportRow => ({ t: 'heat', icon: '🔥', label: '客户热度:', value });
+const wide = (cp: number) =>
+  (cp >= 0x2e80 && cp <= 0x9fff) ||
+  (cp >= 0x3000 && cp <= 0x303f) ||
+  (cp >= 0xff00 && cp <= 0xffef) ||
+  (cp >= 0x1f000 && cp <= 0x1faff);
 
-const SUM = (text: string, lines: number): ReportRow => ({
-  t: 'sum',
-  icon: '📝',
-  label: '画像摘要:',
-  text,
-  lines,
-});
+// Deterministic stand-in for the browser's line breaking: CJK glyphs are one em
+// wide, Latin runs a little over half. The 0.97 safety keeps a row's declared
+// height at or above what the font actually wraps to.
+const advance = (ch: string, fs: number) => {
+  const cp = ch.codePointAt(0) ?? 0;
+  if (ch === ' ') return fs * 0.3;
+  if (wide(cp)) return fs;
+  if (/[A-Z0-9%@#&]/.test(ch)) return fs * 0.64;
+  return fs * 0.53;
+};
 
-// --- hero cards -------------------------------------------------------------
+export const wrapLines = (text: string, fs: number, width: number) => {
+  let lines = 1;
+  let w = 0;
+  for (const ch of text) {
+    const a = advance(ch, fs);
+    if (w + a > width * 0.97) {
+      lines += 1;
+      w = a;
+    } else {
+      w += a;
+    }
+  }
+  return lines;
+};
 
-export const HERO_EXISTING: Report = {
-  key: 'salmon',
-  tone: 'existing',
-  name: 'salmon',
-  serial: '8375',
+const bulletText = (row: Extract<ReportRow, { t: 'bullet' }>) =>
+  `${row.icon ? `${row.icon} ` : ''}${row.label} ${row.text}`;
+
+export const rowHeight = (row: ReportRow, m: Metrics): number => {
+  const iconCol = 38 * (m.body / 30) + 10 * (m.body / 30);
+  const textW = m.width - 2 * m.padX;
+  switch (row.t) {
+    case 'gap':
+      return m.gapH;
+    case 'section':
+      return m.secH;
+    case 'bullet':
+      return wrapLines(bulletText(row), m.body, textW - m.bulletLead) * m.line;
+    case 'note':
+      return m.line;
+    case 'sum':
+      return wrapLines(`${row.label} ${row.text}`, m.body, textW - iconCol) * m.line;
+    default:
+      return m.rowH;
+  }
+};
+
+export const reportHeight = (r: Report) => {
+  const m = metrics(r.typeScale ?? 1);
+  return Math.round(m.headH + m.padTop + m.padBottom + r.rows.reduce((n, row) => n + rowHeight(row, m), 0));
+};
+
+export type SectionBox = SectionSpan & { top: number; height: number };
+
+export const sectionBoxes = (r: Report): SectionBox[] => {
+  const m = metrics(r.typeScale ?? 1);
+  const tops: number[] = [];
+  let y = m.headH + m.padTop;
+  for (const row of r.rows) {
+    tops.push(y);
+    y += rowHeight(row, m);
+  }
+  return (r.sections ?? []).map((s) => {
+    let h = 0;
+    for (let i = s.from; i <= s.to; i++) h += rowHeight(r.rows[i], m);
+    return { ...s, top: tops[s.from], height: h };
+  });
+};
+
+// --- hero cards ------------------------------------------------------------
+
+export const HERO_FULL: Report = {
+  key: 'serien',
+  tone: 'new',
+  name: 'Serien',
+  serial: '8362',
+  typeScale: 0.72,
   rows: [
-    ...IDENTITY('2194615', '未识别', 'Wisdom prego', 'App Store/iPhone SE (3rd generation)', '2026/10/28 13:54:33'),
+    ...IDENTITY('2596715', '未识别', 'BigBearRick75', 'android/samsung SM-S906U', '2026/10/29 22:50:37'),
     { t: 'gap' },
-    { t: 'kv', icon: '🚫', label: '撞单警告:', value: '已存在的老用户' },
-    { t: 'kv', icon: '👤', label: '归属运营:', value: 'carter' },
-    { t: 'kv', icon: '💰', label: '累计充值:', value: '$170.96' },
-    { t: 'kv', icon: '🗓', label: '注册时间:', value: '2026/04/21 13:45:38' },
-    { t: 'kv', icon: '🔗', label: '邀请码:', value: '5278' },
-    SOURCE('Karri'),
+    { t: 'kv', icon: '🚀', label: '发现新用户', value: '(未注册)' },
+    { t: 'txt', icon: '✨', text: '此用户暂无归属，建议立即跟进!' },
+    SOURCE('Ysan'),
     { t: 'gap' },
-    HEAT('8/10'),
-    SUM(
-      '一位来自尼日利亚、从事手工制作工作的单身用户，沟通简短直接，愿意为继续联系而下载 Oumi 并注册，交友意图较强。',
-      3,
+    HEAT('7'),
+    SUM('一位来自加州圣何塞的市政排水行业男性从业者，性格直接务实、略带被动，主动表达交友意愿并配合完成了平台迁移。'),
+    { t: 'gap' },
+    { t: 'section', icon: '👤', title: '基础信息' },
+    BULLET('姓名:', 'Rick'),
+    BULLET(
+      '年龄:',
+      '30-45岁（用词完整正式、回答简短务实，不像年轻网生代的重度俚语使用者，推测为成年职场人）',
     ),
+    BULLET('地区:', '美国加州圣何塞（San Jose, California）'),
+    BULLET('职业:', '市政部门排水/下水道系统从业人员（公共服务/蓝领技术岗）'),
+    { t: 'gap' },
+    { t: 'section', icon: '💗', title: '心理与意图' },
+    BULLET('性格标签:', '务实直率，礼貌克制，好奇心强，配合度高，偏被动'),
+    BULLET(
+      '兴趣爱好:',
+      '纹身话题（表现出兴趣并追问），本职工作相关（愿意主动说明职业），线上社交/聊天',
+    ),
+    BULLET(
+      '沟通风格:',
+      '简短直接、实话实说，多用完整句子和句号，不擅长也不热衷调侃打趣；会主动反问（"And you?" "Where are you located?"）来表达关心，但对对方抛出的玩笑话（如纹身恶搞图）反应较平淡，更偏向配合执行而非热烈回应。',
+    ),
+    BULLET(
+      '交友意图:',
+      '以交友/闲聊为切入，但主动示好并全程配合迁移到私聊平台，带有发展进一步亲密关系（约会或暧昧）的潜在意图，尚不能确定是否认真长期。',
+    ),
+    BULLET(
+      '吸引点:',
+      '对方热情活泼、会开玩笑的氛围，以及"想给你看纹身图"这种制造私密分享感的钩子；整体被对方的主动搭话和持续追问所吸引。',
+    ),
+    { t: 'gap' },
+    { t: 'section', icon: '⚠️', title: '风险评估（等级: 低）' },
+    BULLET(
+      '风险提示:',
+      '无。用户全程礼貌、无骚扰、无索取财物或隐私信息的行为。需注意: 他对平台迁移指令配合度极高、防备心较低，属于容易被引导的类型，后续应避免让其产生被套路感。',
+    ),
+    { t: 'gap' },
+    { t: 'section', icon: '💡', title: '运营跟进建议', accent: 'green' },
+    BULLET(
+      '建议语气:',
+      '真诚自然、亲切随和，偏正常聊天而非过度撒娇或高强度网感俚语；适度主动提问以带动节奏，因为他本人话少、偏被动。',
+    ),
+    BULLET(
+      '破冰建议:',
+      '"嗨 Rick，我是 Mary～终于把你加上啦！刚忙完一点事，抱歉让你等。你在圣何塞那边上班通勤远吗？还有你之前说的排水那摊子活儿，是不是每天都在跟各种奇葩状况打交道哈哈。"',
+      '💬',
+    ),
+    { t: 'note', icon: '🆔', label: 'Note / 会话ID:', code: '6951130561449542661_GZO2EJLGZB' },
   ],
+  sections: [],
+};
+
+// Section spans are derived once so the scan never has to search the row list.
+// Trailing gaps belong to no section: the highlight box and the lifted panel
+// both have to sit tight against the last line of copy.
+HERO_FULL.sections = (() => {
+  const out: SectionSpan[] = [];
+  HERO_FULL.rows.forEach((row, i) => {
+    if (row.t !== 'section') return;
+    if (out.length) out[out.length - 1].to = i - 1;
+    out.push({ icon: row.icon, title: row.title, accent: row.accent, from: i, to: i });
+  });
+  if (out.length) out[out.length - 1].to = HERO_FULL.rows.length - 1;
+  for (const s of out) {
+    while (s.to > s.from && HERO_FULL.rows[s.to].t === 'gap') s.to -= 1;
+  }
+  return out;
+})();
+
+// The lifted panel re-typesets one section at a size meant to be read, so it
+// gets its own metrics rather than a scaled copy of the card.
+export const PANEL_W = 800;
+export const PANEL_PAD = 32;
+export const PANEL_STRIP = 56;
+
+// The lifted panel is the only text in S066 meant to be read; 32px body keeps
+// it on §7.3 Q11's floor while the card itself stays a document at 21.6px.
+export const panelMetrics = (width = PANEL_W): Metrics => ({
+  width,
+  padX: 34,
+  padTop: 0,
+  padBottom: 0,
+  headFont: 0,
+  headH: 0,
+  body: 32,
+  line: 42,
+  rowH: 42,
+  gapH: 18,
+  secFont: 36,
+  secH: 0,
+  bulletLead: 30,
+});
+
+export const sectionPanelHeight = (r: Report, s: SectionSpan, width = PANEL_W) => {
+  const m = panelMetrics(width);
+  const body = r.rows
+    .slice(s.from + 1, s.to + 1)
+    .filter((row) => row.t !== 'gap')
+    .reduce((n, row) => n + rowHeight(row, m), 0);
+  return Math.round(PANEL_PAD * 2 + PANEL_STRIP + body);
 };
 
 export const HERO_NEW: Report = {
@@ -131,9 +297,191 @@ export const HERO_NEW: Report = {
     HEAT('7'),
     SUM(
       '一位来自北卡罗来纳州夏洛特、原籍萨凡纳的60岁左右男性，性格直率但多疑，不擅长使用新应用，渴望陪伴和聊天，最终在耐心引导下给出了Oumi ID。',
-      3,
     ),
+    { t: 'gap' },
+    { t: 'section', icon: '👤', title: '基础信息' },
+    BULLET('姓名:', 'Shawn'),
+    BULLET('年龄:', '55-65岁（对新应用明显陌生、话题围绕陪伴，推测为年长用户）'),
+    BULLET('地区:', '美国北卡罗来纳州夏洛特（Charlotte, North Carolina），原籍萨凡纳'),
+    BULLET('职业:', '退休人员（日常空闲时间多，白天在线）'),
+    { t: 'gap' },
+    { t: 'section', icon: '💗', title: '心理与意图' },
+    BULLET('性格标签:', '直率但多疑，对陌生应用戒备心强，渴望陪伴和聊天'),
+    BULLET('兴趣爱好:', '日常闲聊与陪伴话题（愿意反复确认对方身份），线上社交/聊天'),
+    BULLET('沟通风格:', '用词老派、句子完整；不擅长使用新应用，需要一步步引导操作。'),
+    BULLET('交友意图:', '以找人说话解闷为切入，情感需求明确；在耐心引导下最终给出了Oumi ID。'),
+    { t: 'gap' },
+    { t: 'section', icon: '⚠️', title: '风险评估（等级: 低）' },
+    BULLET('风险提示:', '无。用户的警惕来自陌生感而非恶意；引导流程放慢后配合度明显提升。'),
+    { t: 'gap' },
+    { t: 'section', icon: '💡', title: '运营跟进建议', accent: 'green' },
+    BULLET('建议语气:', '耐心安抚、放慢节奏；多用完整句子给足安全感，避免一次性抛多个问题。'),
+    BULLET('破冰建议:', '"嗨 Shawn，我是 Mary～不着急，一步一步来就好。你平时都喜欢聊些什么呀？"', '💬'),
+    { t: 'note', icon: '🆔', label: 'Note / 会话ID:', code: '6951130561449549277_QW3RMTAC' },
   ],
+};
+
+function IDENTITY(id: string, level: string, nick: string, device: string, time: string): ReportRow[] {
+  return [
+    {
+      t: 'pair',
+      a: { icon: '📱', label: 'Oumi ID:', value: id },
+      b: { icon: '💎', label: 'TikTok等级:', value: level },
+    },
+    { t: 'kv', icon: '👤', label: 'Tk昵称:', value: nick },
+    { t: 'kv', icon: '💻', label: '设备型号:', value: device },
+    { t: 'kv', icon: '⏰', label: '收集时间:', value: time },
+  ];
+}
+
+function SOURCE(account: string): ReportRow {
+  return {
+    t: 'src',
+    icon: '📋',
+    label: '用户画像分析报告',
+    value: account,
+    note: '(未在映射表中找到)',
+  };
+}
+
+function HEAT(value: string): ReportRow {
+  return { t: 'heat', icon: '🔥', label: '客户热度:', value };
+}
+
+function SUM(text: string): ReportRow {
+  return { t: 'sum', icon: '📝', label: '画像摘要:', text };
+}
+
+function BULLET(label: string, text: string, icon?: string): ReportRow {
+  return { t: 'bullet', icon, label, text };
+}
+
+// --- long-form tail ---------------------------------------------------------
+// The feed wall renders the same long report as the hero card (user's
+// screenshot/用户信息卡.jpg): identity header plus the four profile sections.
+// Everything below is deterministic pool sampling over invented data — no real
+// nicknames, IDs or accounts.
+
+const h01 = (n: number) => {
+  const x = Math.sin(n * 12.9898 + 78.233) * 43758.5453;
+  return x - Math.floor(x);
+};
+const pick = <T,>(pool: readonly T[], n: number) => pool[Math.floor(h01(n) * pool.length) % pool.length];
+
+const AGE = [
+  '18-24岁（学生口吻明显，夜间活跃，推测为在校学生）',
+  '20-28岁（用词随意、俚语多，推测为年轻网生代用户）',
+  '25-35岁（回复节奏稳定，推测为已经工作的年轻人）',
+  '30-45岁（用词完整正式、回答简短务实，推测为成年职场人）',
+  '35-50岁（话题围绕家庭与收入，推测为中年用户）',
+] as const;
+const REGION = [
+  '尼日利亚拉各斯（Lagos, Nigeria）',
+  '尼日利亚伊巴丹（Ibadan, Nigeria）',
+  '尼日利亚阿布贾（Abuja, Nigeria）',
+  '尼日利亚阿比亚州（Abia, Nigeria）',
+  '加纳阿克拉（Accra, Ghana）',
+  '南非约翰内斯堡（Johannesburg, South Africa）',
+] as const;
+const JOB = [
+  '市场摊贩（个体经营/日结收入）',
+  '网约车司机（蓝领技术岗）',
+  '在校学生（无固定收入）',
+  '理发师（社区门店/手艺人）',
+  '仓库分拣员（物流/体力岗）',
+  '自由职业者（线上接单/收入不稳定）',
+] as const;
+const TRAIT = [
+  '热情外向，回复快，好奇心强，配合度高',
+  '务实直率，礼貌克制，好奇心强，偏被动',
+  '谨慎多疑，提问多、表态慢，需要安抚',
+  '急热型，开场就问有没有真人回复，掉线也快',
+  '话少被动，但话题对上后回复长度明显增加',
+] as const;
+const HOBBY = [
+  '音乐话题（表现出兴趣并追问），线上社交/聊天',
+  '足球话题（主动追问联赛赛果），线上社交/聊天',
+  '工作与收入话题（愿意主动说明职业），线上社交/聊天',
+  '拍照分享话题（主动发生活照），线上社交/聊天',
+  '家庭话题（聊到家人时明显更活跃），线上社交/聊天',
+] as const;
+const STYLE = [
+  '简短直接、多用短句，不擅长调侃打趣；对玩笑反应平淡，更偏向配合执行。',
+  '回复快但内容短，多用省略句；对方追问时才展开，需要提问式引导。',
+  '用词完整正式、回答简短务实；不主动开启新话题，跟随对方节奏。',
+  '语气随意、爱用表情包；对玩笑话反应热烈，容易聊偏，需要适时拉回主题。',
+] as const;
+const INTENT = [
+  '以交友/闲聊为切入，配合度高，带有发展进一步亲密关系的潜在意图，尚不能确定是否认真长期。',
+  '主要想找真人聊天解闷，对平台功能兴趣一般，留存依赖持续在线感。',
+  '以交友为切入但对价格敏感，反复确认收费后犹豫，转化需要优惠钩子。',
+  '主动示好并愿意分享日常，情感需求明确，但回复窗口集中在夜间。',
+] as const;
+const HOOK = [
+  '对方热情活泼、会开玩笑的氛围；整体被对方的主动搭话和持续追问所吸引。',
+  '"想给你看照片"这类制造私密分享感的钩子；被对方的关注和夸赞所吸引。',
+  '被"有真人在乎"的感觉吸引；对及时回复和点名问候反应最好。',
+  '对共同话题（工作/足球/音乐）产生共鸣；被对方的耐心追问所吸引。',
+] as const;
+const RISK_LOW = [
+  '无。用户全程礼貌、无骚扰、无索取财物或隐私信息的行为，属于容易引导的类型，后续应避免让其产生被套路感。',
+  '无。用户配合度高、防备心较低；需注意其对平台指令的配合度，避免过度承诺。',
+] as const;
+const RISK_MID = [
+  '中。用户对收费话题敏感、曾两次试探性询问价格；后续应先建立信任再谈充值，避免催促。',
+  '中。用户活跃时间不规律、多次掉线；跟进节奏应放缓，避免连续追问引发反感。',
+] as const;
+const TONE_ADVICE = [
+  '真诚自然、亲切随和，偏正常聊天而非过度撒娇或高强度网感俚语；适度主动提问以带动节奏。',
+  '轻松幽默、多用表情包；先接住对方的玩笑再拉回主题，节奏可以快一点。',
+  '耐心安抚、放慢节奏；多用完整句子给足安全感，避免一次性抛多个问题。',
+  '直接务实、少绕弯子；明确告知下一步动作，配合其务实的沟通习惯。',
+] as const;
+const ice = (first: string) =>
+  [
+    `"嗨 ${first}，我是 Mary～终于把你加上啦！刚忙完一点事，抱歉让你等。今天过得怎么样？"`,
+    `"嗨 ${first}，我是 Mary～刚看到你在线就过来打个招呼。最近都在忙些什么呀？"`,
+    `"嗨 ${first}，我是 Mary～不着急慢慢聊。你平时这个点都这么精神吗？"`,
+    `"嗨 ${first}，我是 Mary～很高兴加上你！你那边今天天气怎么样？"`,
+  ] as const;
+
+const ALPHA = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+const noteCode = (seed: number) => {
+  const digits = `${Math.floor(h01(seed * 41.3) * 1e9)}${Math.floor(h01(seed * 67.9) * 1e9)}`
+    .padStart(17, '0')
+    .slice(0, 17);
+  let suf = '';
+  for (let i = 0; i < 8; i++) suf += ALPHA[Math.floor(h01(seed * 7.31 + i * 3.77) * 26) % 26];
+  return `${digits}_${suf}`;
+};
+
+// Appends the four profile sections + session note so a feed tile carries the
+// same long-form shape as the hero card.
+const longTail = (first: string, seed: number): ReportRow[] => {
+  const mid = h01(seed * 3.3) > 0.5;
+  return [
+    { t: 'gap' },
+    { t: 'section', icon: '👤', title: '基础信息' },
+    BULLET('姓名:', first),
+    BULLET('年龄:', pick(AGE, seed * 3.1)),
+    BULLET('地区:', pick(REGION, seed * 5.9)),
+    BULLET('职业:', pick(JOB, seed * 8.3)),
+    { t: 'gap' },
+    { t: 'section', icon: '💗', title: '心理与意图' },
+    BULLET('性格标签:', pick(TRAIT, seed * 11.3)),
+    BULLET('兴趣爱好:', pick(HOBBY, seed * 13.7)),
+    BULLET('沟通风格:', pick(STYLE, seed * 17.1)),
+    BULLET('交友意图:', pick(INTENT, seed * 19.9)),
+    BULLET('吸引点:', pick(HOOK, seed * 23.3)),
+    { t: 'gap' },
+    { t: 'section', icon: '⚠️', title: `风险评估（等级: ${mid ? '中' : '低'}）` },
+    BULLET('风险提示:', mid ? pick(RISK_MID, seed * 29.7) : pick(RISK_LOW, seed * 31.1)),
+    { t: 'gap' },
+    { t: 'section', icon: '💡', title: '运营跟进建议', accent: 'green' },
+    BULLET('建议语气:', pick(TONE_ADVICE, seed * 37.3)),
+    BULLET('破冰建议:', pick(ice(first), seed * 41.9), '💬'),
+    { t: 'note', icon: '🆔', label: 'Note / 会话ID:', code: noteCode(seed) },
+  ];
 };
 
 // --- wall entries -----------------------------------------------------------
@@ -201,7 +549,8 @@ const build = (s: Spec, i: number): Report => {
     );
   }
   rows.push({ t: 'gap' }, HEAT(heat));
-  if (summary) rows.push(SUM(summary, 2));
+  if (summary) rows.push(SUM(summary));
+  rows.push(...longTail(name.split(' ')[0], i + 101));
   return { key: `w${i}`, tone, name, serial, rows };
 };
 
@@ -209,14 +558,8 @@ export const WALL_REPORTS: Report[] = SPECS.map(build);
 
 // --- generated wall entries -------------------------------------------------
 // The far half of the feed renders as ghosts (texture zone, §6.2), so only the
-// near tiles ever need hand-written copy. Everything below is deterministic
-// pool sampling — no Math.random, no real nicknames or accounts.
-
-const h01 = (n: number) => {
-  const x = Math.sin(n * 12.9898 + 78.233) * 43758.5453;
-  return x - Math.floor(x);
-};
-const pick = <T,>(pool: readonly T[], n: number) => pool[Math.floor(h01(n) * pool.length) % pool.length];
+// near tiles ever need hand-written copy. Everything is deterministic pool
+// sampling — no Math.random, no real nicknames or accounts.
 
 const FIRST = [
   'Blessing', 'Daniel', 'Amaka', 'Tunde', 'Grace', 'Chidi', 'Zainab', 'Kemi', 'Kelvin', 'Ifunanya',
@@ -301,11 +644,13 @@ export const genReport = (seed: number): Report => {
     );
   }
   rows.push({ t: 'gap' }, HEAT(pick(HEAT_POOL, seed * 23.9)));
-  if (h01(seed * 29.3) > 0.63) rows.push(SUM(pick(SUMMARY, seed * 31.7), 2));
+  if (h01(seed * 29.3) > 0.63) rows.push(SUM(pick(SUMMARY, seed * 31.7)));
+  const first = pick(FIRST, seed * 2.3);
+  rows.push(...longTail(first, seed));
   return {
     key: `g${seed}`,
     tone: isNew ? 'new' : 'existing',
-    name: `${pick(FIRST, seed * 2.3)} ${pick(LAST, seed * 7.7)}`,
+    name: `${first} ${pick(LAST, seed * 7.7)}`,
     serial: String(8100 + (seed % 940)),
     rows,
   };

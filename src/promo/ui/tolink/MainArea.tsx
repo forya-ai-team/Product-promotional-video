@@ -54,13 +54,11 @@ const TOOLBAR_WIDTH = {
 } as const;
 
 // 批量启动 is second from the right; click target for S03.
+export const LAUNCH_BUTTON_RIGHT =
+  tol.layout.width - tol.layout.toolbarRight - TOOLBAR_WIDTH.template - TOOLBAR_GAP;
+
 export const LAUNCH_BUTTON_CENTER = {
-  x:
-    tol.layout.width -
-    tol.layout.toolbarRight -
-    TOOLBAR_WIDTH.template -
-    TOOLBAR_GAP -
-    TOOLBAR_WIDTH.launch / 2,
+  x: LAUNCH_BUTTON_RIGHT - TOOLBAR_WIDTH.launch / 2,
   y: tol.layout.stageTop + tol.layout.toolbarTop + TOOLBAR_BUTTON_HEIGHT / 2,
 } as const;
 

@@ -2,6 +2,7 @@ import type { FC } from 'react';
 import { Img, staticFile } from 'remotion';
 import { EASE, ramp } from '../spotlightHeroCard/polish';
 import { ChatPanel } from '../../ui/tolink/ChatPanel';
+import { MaskedText } from '../../ui/MaskedText';
 import { S06_CHAT } from '../../ui/tolink/s06Data';
 
 export type ReplyMessage = { kind: 'in' | 'out'; text: string; at: number; lines: number };
@@ -15,7 +16,7 @@ export const REPLY_MESSAGES: ReplyMessage[] = [
   { kind: 'out', text: "Download the Oumi app and sign up first — it's free.", at: 110, lines: 1 },
   { kind: 'in', text: 'ok, just downloaded it', at: 128, lines: 1 },
   { kind: 'out', text: 'Nice. Open your profile page and send me your UID.', at: 166, lines: 1 },
-  { kind: 'in', text: '2194615', at: 184, lines: 1 },
+  { kind: 'in', text: '2596715', at: 184, lines: 1 },
 ];
 
 const IN_H = 40;
@@ -85,7 +86,7 @@ export const ReplyChatThread: FC<Props> = ({ frame, width, height, radius }) => 
               opacity: e,
             }}
           >
-            {m.text}
+            <MaskedText text={m.text} />
           </div>
         </div>
       );
@@ -125,7 +126,7 @@ export const ReplyChatThread: FC<Props> = ({ frame, width, height, radius }) => 
             opacity: e,
           }}
         >
-          {m.text}
+          <MaskedText text={m.text} />
         </div>
       </div>
     );

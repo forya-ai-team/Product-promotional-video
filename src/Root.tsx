@@ -12,6 +12,7 @@ import { S055 } from './promo/scenes/S055';
 import { S05BeatCut } from './promo/scenes/S05BeatCut';
 import { S05Static } from './promo/scenes/S05Static';
 import { S06ReplyFull } from './promo/scenes/S06Reply';
+import { S066Report } from './promo/scenes/S066Report';
 import { S06Spotlight } from './promo/scenes/S06Spotlight';
 import { S06Static } from './promo/scenes/S06Static';
 import { S065Feed } from './promo/scenes/S065Feed';
@@ -27,6 +28,7 @@ import {
   S055_DURATION,
   S06_DURATION,
   S06_SPOTLIGHT_DURATION,
+  S066_DURATION,
   S065_DURATION,
   S07_DURATION,
   TOTAL_FRAMES,
@@ -136,6 +138,14 @@ export const RemotionRoot: FC = () => {
         id="S06Reply"
         component={S06ReplyFull}
         durationInFrames={S06_DURATION}
+        fps={FPS}
+        width={1920}
+        height={1080}
+      />
+      <Composition
+        id="S066Report"
+        component={S066Report}
+        durationInFrames={S066_DURATION}
         fps={FPS}
         width={1920}
         height={1080}

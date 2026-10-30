@@ -30,6 +30,11 @@ export const tol = {
     toastIcon: '#6ED53E',
     loadingBlue: '#409EFF',
     loadingTrack: '#F4F4F4',
+    // Film-side annotation ink (D64): #E8A33D at 10% composited over windowBg,
+    // so the tag reads as the narrator's, not the product's.
+    noteBg: '#F9F2E8',
+    noteLine: 'rgba(232, 163, 61, 0.55)',
+    noteText: '#8A5A12',
   },
   layout: {
     width: 1920,

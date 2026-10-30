@@ -4,6 +4,11 @@ import { DEMO_EDGES, EDGES, NODES, type WorkflowEdge } from './workflowData';
 export const PANEL = { x: 1046, y: 122, w: 838, h: 884, r: 18 } as const;
 export const DURATION = S06_REPLY_DURATION;
 
+// The complete report is 1346 tall at its own typesetting, so it only fits the
+// frame at a reduced scale. S066 rests the card at this size and S065 picks the
+// toss up from the same pose, which keeps the dissolve seam exact.
+export const REPORT_POSE_SCALE = 0.73;
+
 // The reference demo spends 20s on one pass; the promo keeps the front chain
 // and the six-way split, then leaves the demo route for the report branch
 // (Merge1 -> 格式化报告 -> 分析卡片发送) that feeds the Lark bot.

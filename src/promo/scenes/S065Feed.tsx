@@ -2,9 +2,10 @@ import type { FC, ReactNode } from 'react';
 import { AbsoluteFill, useCurrentFrame } from 'remotion';
 import { Dust, EASE, Grain, ramp } from '../shots/spotlightHeroCard/polish';
 import { LarkReportCard } from '../shots/workflow/LarkReportCard';
+import { REPORT_POSE_SCALE } from '../shots/workflow/plan';
 import {
   CARD_W,
-  HERO_EXISTING,
+  HERO_FULL,
   HERO_NEW,
   TONE,
   genReport,
@@ -12,10 +13,10 @@ import {
   type Report,
 } from '../shots/workflow/reportData';
 
-// S06.5 — the report card from S06 is tossed through the air into a feed wall,
-// then the camera pulls back while the wall accelerates: four lanes become
-// ten. Same stage as the S06 reply (radial, warm key, dust, grain) so the
-// dissolve seam only melts the foreground.
+// S065 — the report card S066 has been scanning is tossed through the air into
+// a feed wall, then the camera pulls back while the wall accelerates: four
+// lanes become ten. Same stage as the S06 reply (radial, warm key, dust,
+// grain) so the dissolve seam only melts the foreground.
 
 const TILE_W = 430;
 const S = TILE_W / CARD_W;
@@ -24,7 +25,6 @@ const GAP = 26;
 const COL_FROM = -6;
 const COL_TO = 6;
 const ROWS = 30;
-const HERO_H = 748 * S;
 
 const FLY = [14, 56] as const;
 const BLOOM_AT = 40;
@@ -37,18 +37,24 @@ const SC2 = 282;
 const TRAVEL = 6000;
 const ZOOM_END = 0.42;
 const TILT = 7;
+// The pull-back's settled hold lifts the dark stage toward S07's paper field,
+// so the 16f dissolve finishes a move the scene already started instead of
+// blending dark navy straight into near-white.
+const LIFT_FROM = 272;
+const LIFT_SPAN = 40; // ends exactly at frame 312, the seam frame
+const PAPER = '#F7F9FD'; // S07's background, so the dissolve matches tones
 
 const TILE_SHADOW = '0 10px 30px rgba(0,0,0,0.58), 0 0 0 1px rgba(255,255,255,0.07)';
 const clamp01 = (v: number) => (v < 0 ? 0 : v > 1 ? 1 : v);
 
-const tileH = (r: Report) => (r === HERO_EXISTING ? 748 : reportHeight(r)) * S;
+const tileH = (r: Report) => reportHeight(r) * S;
 
 type Box = { report: Report; x: number; y: number; h: number; col: number };
 
 const buildWall = (): Box[] => {
   const boxes: Box[] = [];
   for (let c = COL_FROM; c <= COL_TO; c++) {
-    const forced = c === 0 ? HERO_EXISTING : c === 1 ? HERO_NEW : null;
+    const forced = c === 0 ? HERO_FULL : c === 1 ? HERO_NEW : null;
     const list: Report[] = [];
     for (let i = 0; i < ROWS; i++) {
       list.push(i === 2 && forced ? forced : genReport((c - COL_FROM) * 100 + i + 1));
@@ -66,7 +72,8 @@ const buildWall = (): Box[] => {
 };
 
 const WALL = buildWall();
-const HERO = WALL.find((b) => b.report === HERO_EXISTING)!;
+const HERO = WALL.find((b) => b.report === HERO_FULL)!;
+const HERO_H = reportHeight(HERO_FULL);
 const HERO_CX = HERO.x + TILE_W / 2;
 const HERO_CY = HERO.y + HERO.h / 2;
 // Camera rest target: puts the hero slot at screen (732, 540) at zoom 1.
@@ -95,16 +102,18 @@ const shadowAt = (k: number) =>
 
 const Ghost: FC<{ report: Report; h: number }> = ({ report, h }) => {
   const tone = TONE[report.tone];
+  const k = report.typeScale ?? 1;
+  const head = 89 * k;
   const bars = 'repeating-linear-gradient(to bottom,#E7E9ED 0 16px,rgba(0,0,0,0) 16px 40px)';
   const dots = 'repeating-linear-gradient(to bottom,#CDD2DA 0 16px,rgba(0,0,0,0) 16px 40px)';
   return (
     <div style={{ position: 'relative', width: CARD_W, height: h, borderRadius: 16, overflow: 'hidden', background: '#fff' }}>
-      <div style={{ height: 89, background: tone.headBg, borderBottom: `1px solid ${tone.headLine}` }}>
-        <div style={{ width: 30, height: 30, margin: '29px 0 0 30px', borderRadius: '50%', background: 'rgba(0,0,0,0.15)' }} />
-        <div style={{ position: 'absolute', left: 78, top: 33, width: 430, height: 22, borderRadius: 11, background: tone.title, opacity: 0.68 }} />
+      <div style={{ height: head, background: tone.headBg, borderBottom: `1px solid ${tone.headLine}` }}>
+        <div style={{ width: 30 * k, height: 30 * k, margin: `${29 * k}px 0 0 ${30 * k}px`, borderRadius: '50%', background: 'rgba(0,0,0,0.15)' }} />
+        <div style={{ position: 'absolute', left: 78 * k, top: 33 * k, width: 430 * k, height: 22 * k, borderRadius: 11 * k, background: tone.title, opacity: 0.68 }} />
       </div>
-      <div style={{ position: 'absolute', left: 78, top: 118, width: 500, height: h - 130, backgroundImage: bars }} />
-      <div style={{ position: 'absolute', left: 34, top: 118, width: 26, height: h - 130, backgroundImage: dots }} />
+      <div style={{ position: 'absolute', left: 78 * k, top: head + 29, width: 500 * k, height: h - head - 40, backgroundImage: bars }} />
+      <div style={{ position: 'absolute', left: 34 * k, top: head + 29, width: 26 * k, height: h - head - 40, backgroundImage: dots }} />
     </div>
   );
 };
@@ -143,19 +152,22 @@ export const S065Feed: FC = () => {
   const cy = CAM_CY + scroll;
   const rotX = TILT * clamp01((1 - zoom) / (1 - ZOOM_END));
   const pull = clamp01((1 - zoom) / (1 - ZOOM_END));
+  // Paper lift: drains the dark stage during the settled hold so the dissolve
+  // hands over a near-paper frame rather than a navy one.
+  const lift = ramp(f, LIFT_FROM, LIFT_SPAN, EASE.smooth);
   // Swap to the ghost version only once the 30px body text is under ~9px on
   // screen; the window is deliberately narrow so the cross-fade hides inside
   // the fastest part of the pull-back.
   const detail = clamp01((S * zoom - 0.26) / 0.035);
 
   // Beat 1: the card is thrown in — lifts toward the camera, turns over, then
-  // dives into its slot. Starts and ends flat, so frame 0 is S06's frame 657.
+  // dives into its slot. Starts and ends flat, so frame 0 is S066's last frame.
   const fly = ramp(f, FLY[0], FLY[1] - FLY[0], EASE.swift);
   const spin = Math.sin(fly * Math.PI);
   const heroDx = 733 * (1 - fly);
   const heroDy = 24 * (1 - fly);
   const heroDz = 340 * spin;
-  const heroScale = 1 + (S - 1) * fly;
+  const heroScale = REPORT_POSE_SCALE + (S - REPORT_POSE_SCALE) * fly;
   // Drawn in screen space, above the vignette: S06 paints its card there, so
   // the seam frame has to match. The camera is still flat for the whole flight.
   const heroX = 960 + (HERO_CX + heroDx - CAM_CX) * zoom;
@@ -220,12 +232,14 @@ export const S065Feed: FC = () => {
         <Dust count={18} seed={11} drift={0.22} opacity={0.28} color="#dfe9ff" />
       </AbsoluteFill>
 
+      <AbsoluteFill style={{ background: PAPER, pointerEvents: 'none', opacity: lift }} />
+
       <div
         style={{
           position: 'absolute',
           inset: 0,
           pointerEvents: 'none',
-          opacity: 0.72 * pull,
+          opacity: 0.72 * pull * (1 - lift),
           background:
             'radial-gradient(ellipse 62% 70% at 50% 48%, rgba(5,7,12,0) 0%, rgba(5,7,12,0.26) 58%, rgba(5,7,12,0.7) 100%)',
         }}
@@ -236,6 +250,7 @@ export const S065Feed: FC = () => {
           position: 'absolute',
           inset: 0,
           pointerEvents: 'none',
+          opacity: 1 - 0.85 * lift,
           background: 'radial-gradient(ellipse 78% 78% at 50% 46%, rgba(2,3,6,0) 45%, rgba(2,3,6,0.38) 100%)',
         }}
       />
@@ -251,8 +266,8 @@ export const S065Feed: FC = () => {
           transform: `perspective(${(1500 * zoom).toFixed(0)}px) translate3d(0px, 0px, ${heroZ.toFixed(2)}px) rotateY(${(-40 * spin).toFixed(2)}deg) rotateZ(${(-12 * spin).toFixed(2)}deg) scale(${heroScreenScale.toFixed(4)})`,
         }}
       >
-        <div style={{ position: 'absolute', left: -CARD_W / 2, top: -374, width: CARD_W, height: 748 }}>
-          <LarkReportCard report={HERO_EXISTING} height={748} shadow={shadowAt(fly)} />
+        <div style={{ position: 'absolute', left: -CARD_W / 2, top: -HERO_H / 2, width: CARD_W, height: HERO_H }}>
+          <LarkReportCard report={HERO_FULL} height={HERO_H} shadow={shadowAt(fly)} />
         </div>
       </div>
 

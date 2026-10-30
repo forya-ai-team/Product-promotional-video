@@ -4,7 +4,8 @@ import { PageCam, type CamKey2D } from '../shots/spotlightHeroCard/PageCam';
 import { Dust, EASE, Grain, alpha, ramp } from '../shots/spotlightHeroCard/polish';
 import { ReplyChatThread } from '../shots/workflow/ReplyChatThread';
 import { WorkflowPanel } from '../shots/workflow/WorkflowPanel';
-import { LarkReportCard, REPORT_H, REPORT_W } from '../shots/workflow/LarkReportCard';
+import { LarkReportCard } from '../shots/workflow/LarkReportCard';
+import { CARD_W as REPORT_W, HERO_FULL, reportHeight, type Report } from '../shots/workflow/reportData';
 import { CARD_AT, DURATION, LEAD_START, NOTIFY_AT, PANEL, QUICK_NODE, nodeScreen } from '../shots/workflow/plan';
 import { S06Spotlight } from './S06Spotlight';
 import { S06Desktop } from '../ui/tolink/S06Desktop';
@@ -20,14 +21,23 @@ const CARD = { x: 140, y: 122 };
 const GOLD = '#E4C58A';
 const CYAN = '#8FD8FF';
 
+const REPORT_H = reportHeight(HERO_FULL);
+const CARD_CX = PANEL.x + PANEL.w / 2;
+const CARD_CY = PANEL.y + PANEL.h / 2;
+
 const FINAL: CamKey2D = { frame: 0, cx: 960, cy: 540, zoom: 1.0, rotX: 2, rotY: -6, rotZ: -1, persp: 1200 };
 const CAM: CamKey2D[] = [FINAL, { ...FINAL, frame: DURATION }];
 
 const NOTE_LINE_1 = 'AI 矩阵聚合';
 const NOTE_LINE_2 = '全天候托管与转化全链路执行';
 
-export const S06Reply: FC = () => {
-  const f = useCurrentFrame();
+export const S06Reply: FC<{ atFrame?: number; hideCard?: boolean; card?: Report }> = ({
+  atFrame,
+  hideCard,
+  card = HERO_FULL,
+}) => {
+  const sceneFrame = useCurrentFrame();
+  const f = atFrame ?? sceneFrame;
 
   // Continues the spotlight's breathing phase (its frame 172 == this frame 0 + 30).
   const holdBreath = 1 + 0.012 * Math.sin((f + 30) / 14);
@@ -243,12 +253,12 @@ export const S06Reply: FC = () => {
         }}
       />
 
-      {f >= CARD_AT - 1 ? (
+      {!hideCard && f >= CARD_AT - 1 ? (
         <div
           style={{
             position: 'absolute',
-            left: PANEL.x + PANEL.w / 2,
-            top: PANEL.y + PANEL.h / 2,
+            left: CARD_CX,
+            top: CARD_CY,
             width: REPORT_W,
             height: REPORT_H,
             transform: `translate(-50%, -50%) scale(${cardScale.toFixed(4)})`,
@@ -256,7 +266,7 @@ export const S06Reply: FC = () => {
             opacity: cardOpacity,
           }}
         >
-          <LarkReportCard />
+          <LarkReportCard report={card} />
         </div>
       ) : null}
 
@@ -361,9 +371,10 @@ const Beams: FC<{ frame: number }> = ({ frame }) => {
   );
 };
 
-// Full S06: spotlight (172f) hands over to the chat → workflow → Lark shot (486f).
-// The reply starts on the spotlight's last frame, which is what its opening
-// state (breathing phase, veil, note) was authored against.
+// Full S06: spotlight (172f) hands over to the chat → workflow → Lark shot
+// (402f). The reply starts on the spotlight's last frame, which is what its
+// opening state (breathing phase, veil, note) was authored against. The reply
+// ends 10f after the report card lands; S066 continues on that exact frame.
 export const S06ReplyFull: FC = () => (
   <AbsoluteFill>
     <Sequence durationInFrames={S06_SPOTLIGHT_DURATION}>

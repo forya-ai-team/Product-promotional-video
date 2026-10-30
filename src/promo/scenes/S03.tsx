@@ -2,7 +2,7 @@ import type { FC, ReactNode } from 'react';
 import { AbsoluteFill, Easing, interpolate, useCurrentFrame } from 'remotion';
 import { BigCursor } from '../ui/tolink/BigCursor';
 import { CONFIG_ROWS } from '../ui/tolink/data';
-import { LAUNCH_BUTTON_CENTER, type RowMotion } from '../ui/tolink/MainArea';
+import { LAUNCH_BUTTON_RIGHT, LAUNCH_BUTTON_CENTER, type RowMotion } from '../ui/tolink/MainArea';
 import { Stage } from '../ui/tolink/Stage';
 import { TolinkDesktop } from '../ui/tolink/TolinkDesktop';
 import { tol } from '../ui/tolink/tokens';
@@ -201,6 +201,59 @@ const scrollAt = (frame: number) => {
   );
 };
 
+// The tag sits above 批量启动 inside the camera layer, so the 3.6x push carries
+// it off-frame on its own and no fade schedule is needed. The 55px offset is
+// 44 (tag) + 9 (leader) + 2 (air above the button).
+const NOTE_TOP = tol.layout.stageTop + tol.layout.toolbarTop - 55;
+const NOTE_HEIGHT = 44;
+
+const DemoNote: FC = () => (
+  <>
+    <div
+      style={{
+        position: 'absolute',
+        right: tol.layout.width - LAUNCH_BUTTON_RIGHT,
+        top: NOTE_TOP,
+        height: NOTE_HEIGHT,
+        display: 'flex',
+        alignItems: 'center',
+        gap: 10,
+        padding: '0 16px',
+        borderRadius: 6,
+        boxSizing: 'border-box',
+        background: tol.color.noteBg,
+        border: `1.5px solid ${tol.color.noteLine}`,
+        color: tol.color.noteText,
+        fontSize: 32,
+        fontWeight: 600,
+        letterSpacing: 1,
+        whiteSpace: 'nowrap',
+      }}
+    >
+      <span
+        style={{
+          width: 9,
+          height: 9,
+          borderRadius: '50%',
+          flex: 'none',
+          background: tol.color.warning,
+        }}
+      />
+      <span>真实案例（部分演示）</span>
+    </div>
+    <div
+      style={{
+        position: 'absolute',
+        left: LAUNCH.x - 1,
+        top: NOTE_TOP + NOTE_HEIGHT,
+        width: 2,
+        height: 9,
+        background: tol.color.noteLine,
+      }}
+    />
+  </>
+);
+
 const AppClip: FC<{ children: ReactNode; zIndex: number }> = ({ children, zIndex }) => (
   <div
     style={{
@@ -355,6 +408,7 @@ export const S03: FC = () => {
             elevation={frame < CRANE_START ? 0.6 : mix(0.6, 1, craneEase(clamp01((frame - CRANE_START) / (CRANE_END - CRANE_START))))}
             cursor={false}
           />
+          <DemoNote />
           <ClickBurst frame={frame} center={CARD} clickFrame={CLICK_FRAME} />
           <ClickBurst frame={frame} center={LAUNCH} clickFrame={CLICK2_FRAME} />
           <BigCursor x={cursor.x} y={cursor.y} scale={1 - 0.12 * (press + press2)} />

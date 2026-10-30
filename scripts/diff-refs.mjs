@@ -16,6 +16,9 @@ const maskRects = [
   // captured OS cursor + recorder timestamp watermark are not part of the UI
   { x: 742, y: 778, w: 30, h: 34 },
   { x: 0, y: 888, w: 320, h: 44 },
+  // the film-side 「真实案例（部分演示）」annotation lives in S03.tsx, not in the
+  // replicated window, so it must not fail the 1:1 gate (D64)
+  { x: 1338, y: 15, w: 388, h: 55 },
   // 2px capture border at the top and the washed-out recorder fade at the bottom
   { x: 0, y: 0, w: W, h: 2 },
   { x: 0, y: 918, w: W, h: 14 },
